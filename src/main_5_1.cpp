@@ -32,7 +32,6 @@ struct Light {
 Light gLight1;
 Light gLight2;
 
-
 Core::Shader_Loader shaderLoader;
 
 obj::Model shipModel;
@@ -46,10 +45,12 @@ glm::mat4 cameraMatrix, perspectiveMatrix;
 
 glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
 
-
 float yaw = 0.0;
 float pitch = 0.0;
 float roll = 0.0;
+
+float oldX = 0;
+float oldY = 0;
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -75,23 +76,31 @@ void keyboard(unsigned char key, int x, int y)
 	case 'a': cameraPos -= glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
 	case 'c': cameraPos += glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeedUpDown; break;
 	case 'v': yaw  += 0.1; break;
-
 	}
 }
 
-void mouse(int button, int state, int x, int y) {
-	if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN)
-	{
-		//store the x,y value where the click happened
-		puts("Middle button clicked");
-	}
+void mouseMove(int x, int y) {
 
+	float sen = 0.05;
+	float margin = 5;
+
+	if (x - margin > oldX)
+		roll += sen;
+	else if (x + margin < oldX)
+		roll -= sen;
+
+	if (y - margin > oldY)
+		pitch += sen;
+	else if (y + margin < oldY)
+		pitch -= sen;
+	
+	oldX = x;
+	oldY = y;
 }
 
 glm::mat4 createCameraMatrix()
 {
-
-	return Core::createViewMatrix(cameraPos,yaw, 1.0f, 1.0f);
+	return Core::createViewMatrix(cameraPos,yaw, roll, pitch);
 }
 
 void drawObjectColor(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
@@ -158,7 +167,6 @@ void drawSunObjectTexture(obj::Model * model, glm::mat4 modelMatrix, GLuint zmie
 	glUseProgram(0);
 }
 
-
 glm::mat4 createScalingMatrix(float number) {
 	glm::mat4 scalingMatrix;
 	scalingMatrix[0][0] = number;
@@ -184,7 +192,6 @@ glm::mat4 createTranslationMatrix(float number) {
 	return translationMatrix;
 
 }
-
 
 void renderScene()
 {
@@ -309,11 +316,6 @@ void renderScene()
 	glutSwapBuffers();
 }
 
-
-
-
-
-
 void init()
 {
 	glEnable(GL_DEPTH_TEST);
@@ -362,7 +364,7 @@ int main(int argc, char ** argv)
 	gLight2.attenuation = 0.005f;
 
 	init();
-	glutMouseFunc(mouse);
+	glutMotionFunc(mouseMove);
 	glutKeyboardFunc(keyboard);
 	glutDisplayFunc(renderScene);
 	glutIdleFunc(idle);
