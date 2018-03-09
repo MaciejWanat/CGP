@@ -37,7 +37,8 @@ Core::Shader_Loader shaderLoader;
 obj::Model shipModel;
 obj::Model sphereModel;
 
-float cameraAngle = 0;
+float cameraAngleX = 4.7;
+float cameraAngleY = 5;
 glm::vec3 cameraPos = glm::vec3(-5, 0, 0);
 glm::vec3 cameraDir;
 
@@ -53,10 +54,11 @@ float oldX = 0;
 float oldY = 0;
 
 void keyboard(unsigned char key, int x, int y)
-{
-	float angleSpeed = 0.1f;
+{	
 	float moveSpeed = 0.1f;
 	float moveSpeedUpDown = 0.3f;
+	float angleSpeed = 0.1f;
+
 	switch(key)
 	{
 	case '1': gLight1.intensities = glm::vec3(1, 1, 1); break;
@@ -68,8 +70,8 @@ void keyboard(unsigned char key, int x, int y)
 	case '7': gLight1.position = glm::vec3(10.0f, 0.0f, 0.0f); break;
 	case '8': gLight1.position = glm::vec3(-10.0f, 0.0f, 0.0f); break;
 	case '0': gLight1.position = glm::vec3(0.0f, 0.0f, 0.0f); gLight1.intensities = glm::vec3(1, 1, 1); break;
-	case 'z': cameraAngle -= angleSpeed; break;
-	case 'x': cameraAngle += angleSpeed; break;
+	case 'z': cameraAngleX -= angleSpeed; break;
+	case 'x': cameraAngleX += angleSpeed; break;
 	case 'w': cameraPos += cameraDir * moveSpeed; break;
 	case 's': cameraPos -= cameraDir * moveSpeed; break;
 	case 'd': cameraPos += glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
@@ -85,14 +87,26 @@ void mouseMove(int x, int y)
 	float margin = 5;
 
 	if (x - margin > oldX)
+	{
 		roll += sen;
+		cameraAngleX += sen;
+	}
 	else if (x + margin < oldX)
+	{
 		roll -= sen;
+		cameraAngleX -= sen;
+	}
 
 	if (y - margin > oldY)
+	{
 		pitch += sen;
+		cameraAngleY += sen;
+	}		
 	else if (y + margin < oldY)
+	{
 		pitch -= sen;
+		cameraAngleY -= sen;
+	}		
 	
 	oldX = x;
 	oldY = y;
@@ -100,7 +114,8 @@ void mouseMove(int x, int y)
 
 glm::mat4 createCameraMatrix()
 {
-	cameraDir = glm::vec3(cosf(cameraAngle), 0.0f, sinf(cameraAngle));
+	cameraDir = glm::vec3(cosf(cameraAngleX), 0.0f, sinf(cameraAngleX));
+
 	return Core::createViewMatrix(cameraPos, yaw, roll, pitch);
 }
 
@@ -298,7 +313,7 @@ void renderScene()
 	//zrob rotacje ksiezyca wokol siebie, odsun na odleglosc jaka by dzielila go od ziemi, zrob rotacje, przesun w miejsce ziemi, zrob rotacje wokol slonca
 
 	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
-	glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
+	glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngleX + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
 	//drawObjectColor(&sphereModel, glm::translate(glm::vec3(3.825, 0, 3.825)), glm::vec3(0.3f,0.4f,0.5f));
 	
