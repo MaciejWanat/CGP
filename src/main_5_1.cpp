@@ -79,8 +79,8 @@ void keyboard(unsigned char key, int x, int y)
 	}
 }
 
-void mouseMove(int x, int y) {
-
+void mouseMove(int x, int y)
+{
 	float sen = 0.05;
 	float margin = 5;
 
@@ -100,7 +100,8 @@ void mouseMove(int x, int y) {
 
 glm::mat4 createCameraMatrix()
 {
-	return Core::createViewMatrix(cameraPos,yaw, roll, pitch);
+	cameraDir = glm::vec3(cosf(cameraAngle), 0.0f, sinf(cameraAngle));
+	return Core::createViewMatrix(cameraPos, yaw, roll, pitch);
 }
 
 void drawObjectColor(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
