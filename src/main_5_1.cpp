@@ -47,6 +47,10 @@ glm::mat4 cameraMatrix, perspectiveMatrix;
 glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
 
 
+float yaw = 0.0;
+float pitch = 0.0;
+float roll = 0.0;
+
 void keyboard(unsigned char key, int x, int y)
 {
 	float angleSpeed = 0.1f;
@@ -70,18 +74,24 @@ void keyboard(unsigned char key, int x, int y)
 	case 'd': cameraPos += glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
 	case 'a': cameraPos -= glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
 	case 'c': cameraPos += glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeedUpDown; break;
-	case 'v': cameraPos -= glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeedUpDown; break;
+	case 'v': yaw  += 0.1; break;
 
 	}
 }
 
+void mouse(int button, int state, int x, int y) {
+	if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN)
+	{
+		//store the x,y value where the click happened
+		puts("Middle button clicked");
+	}
+
+}
+
 glm::mat4 createCameraMatrix()
 {
-	// Obliczanie kierunku patrzenia kamery (w plaszczyznie x-z) przy uzyciu zmiennej cameraAngle kontrolowanej przez klawisze.
-	cameraDir = glm::vec3(cosf(cameraAngle), 0.0f, sinf(cameraAngle));
-	glm::vec3 up = glm::vec3(0,1,0);
 
-	return Core::createViewMatrix(cameraPos, cameraDir, up);
+	return Core::createViewMatrix(cameraPos,yaw, 1.0f, 1.0f);
 }
 
 void drawObjectColor(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
@@ -352,6 +362,7 @@ int main(int argc, char ** argv)
 	gLight2.attenuation = 0.005f;
 
 	init();
+	glutMouseFunc(mouse);
 	glutKeyboardFunc(keyboard);
 	glutDisplayFunc(renderScene);
 	glutIdleFunc(idle);

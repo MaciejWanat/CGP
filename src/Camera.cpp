@@ -14,19 +14,38 @@ glm::mat4 Core::createPerspectiveMatrix(float zNear, float zFar)
 	return perspective;
 }
 
-glm::mat4 Core::createViewMatrix( glm::vec3 position, glm::vec3 forward, glm::vec3 up )
+//glm::mat4 Core::createViewMatrix( glm::vec3 position, glm::vec3 forward, glm::vec3 up )
+//{
+//	glm::vec3 side = glm::cross(forward, up);
+//
+//	// Trzeba pamietac o minusie przy ustawianiu osi Z kamery.
+//	// Wynika to z tego, ze standardowa macierz perspektywiczna zaklada, ze "z przodu" jest ujemna (a nie dodatnia) czesc osi Z.
+//	glm::mat4 cameraRotation;
+//	cameraRotation[0][0] = side.x; cameraRotation[1][0] = side.y; cameraRotation[2][0] = side.z;
+//	cameraRotation[0][1] = up.x; cameraRotation[1][1] = up.y; cameraRotation[2][1] = up.z;
+//	cameraRotation[0][2] = -forward.x; cameraRotation[1][2] = -forward.y; cameraRotation[2][2] = -forward.z;
+//
+//	glm::mat4 cameraTranslation;
+//	cameraTranslation[3] = glm::vec4(-position, 1.0f);
+//
+//	return cameraRotation * cameraTranslation;
+//}
+
+glm::mat4 Core::createViewMatrix(glm::vec3 position, float yaw, float pitch, float roll)
 {
-	glm::vec3 side = glm::cross(forward, up);
+	glm::mat4 Rx,Ry,Rz,M,T;
+	glm::mat4 Id = glm::mat4();
 
-	// Trzeba pamietac o minusie przy ustawianiu osi Z kamery.
-	// Wynika to z tego, ze standardowa macierz perspektywiczna zaklada, ze "z przodu" jest ujemna (a nie dodatnia) czesc osi Z.
-	glm::mat4 cameraRotation;
-	cameraRotation[0][0] = side.x; cameraRotation[1][0] = side.y; cameraRotation[2][0] = side.z;
-	cameraRotation[0][1] = up.x; cameraRotation[1][1] = up.y; cameraRotation[2][1] = up.z;
-	cameraRotation[0][2] = -forward.x; cameraRotation[1][2] = -forward.y; cameraRotation[2][2] = -forward.z;
+	Rx = glm::rotate(Id, roll, glm::vec3(1.0f, 0.0f, 0.0f));
+	Ry = glm::rotate(Id, pitch, glm::vec3(0.0f, 1.0f, 0.0f));
+	Rz = glm::rotate(Id, yaw, glm::vec3(0.0f, 0.0f, 1.0f));
 
-	glm::mat4 cameraTranslation;
-	cameraTranslation[3] = glm::vec4(-position, 1.0f);
+	T = glm::translate(Id, position);
+	M = Rx * Ry * Rz * T;
 
-	return cameraRotation * cameraTranslation;
+	return M;
 }
+
+
+
+
