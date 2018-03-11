@@ -32,13 +32,17 @@ struct Light {
 Light gLight1;
 Light gLight2;
 
+
 Core::Shader_Loader shaderLoader;
 
 obj::Model shipModel;
 obj::Model sphereModel;
 
-float cameraAngleX = 4.7;
-float cameraAngleY = 5;
+float cameraAngle = 5;
+
+float oldX = 0;
+float oldY = 0;
+
 glm::vec3 cameraPos = glm::vec3(-5, 0, 0);
 glm::vec3 cameraDir;
 
@@ -46,19 +50,12 @@ glm::mat4 cameraMatrix, perspectiveMatrix;
 
 glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
 
-float yaw = 0.0;
-float pitch = 0.0;
-float roll = 0.0;
-
-float oldX = 0;
-float oldY = 0;
 
 void keyboard(unsigned char key, int x, int y)
-{	
+{
+	float angleSpeed = 0.1f;
 	float moveSpeed = 0.1f;
 	float moveSpeedUpDown = 0.3f;
-	float angleSpeed = 0.1f;
-
 	switch(key)
 	{
 	case '1': gLight1.intensities = glm::vec3(1, 1, 1); break;
@@ -70,53 +67,47 @@ void keyboard(unsigned char key, int x, int y)
 	case '7': gLight1.position = glm::vec3(10.0f, 0.0f, 0.0f); break;
 	case '8': gLight1.position = glm::vec3(-10.0f, 0.0f, 0.0f); break;
 	case '0': gLight1.position = glm::vec3(0.0f, 0.0f, 0.0f); gLight1.intensities = glm::vec3(1, 1, 1); break;
-	case 'z': cameraAngleX -= angleSpeed; break;
-	case 'x': cameraAngleX += angleSpeed; break;
+	case 'z': cameraAngle -= angleSpeed; break;
+	case 'x': cameraAngle += angleSpeed; break;
 	case 'w': cameraPos += cameraDir * moveSpeed; break;
 	case 's': cameraPos -= cameraDir * moveSpeed; break;
-	case 'd': cameraPos += glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
-	case 'a': cameraPos -= glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
-	case 'c': cameraPos += glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeedUpDown; break;
-	case 'v': yaw  += 0.1; break;
+	case 'd': Camera::pitch += 0.1; break;
+	case 'a': Camera::pitch -= 0.1; break;
+	case 'c': Camera::yaw += 0.1; break;
+	case 'v': Camera::yaw -= 0.1; break;
 	}
 }
 
-void mouseMove(int x, int y)
-{
+void mouse(int x, int y) {
 	float sen = 0.05;
 	float margin = 5;
 
 	if (x - margin > oldX)
 	{
-		roll += sen;
-		cameraAngleX += sen;
+		Camera::yaw += sen;
 	}
 	else if (x + margin < oldX)
 	{
-		roll -= sen;
-		cameraAngleX -= sen;
+		Camera::yaw -= sen;
 	}
 
 	if (y - margin > oldY)
 	{
-		pitch += sen;
-		cameraAngleY += sen;
-	}		
+		Camera::pitch += sen;
+	}
 	else if (y + margin < oldY)
 	{
-		pitch -= sen;
-		cameraAngleY -= sen;
-	}		
-	
+		Camera::pitch -= sen;
+	}
+
+
 	oldX = x;
 	oldY = y;
 }
 
 glm::mat4 createCameraMatrix()
 {
-	cameraDir = glm::vec3(cosf(cameraAngleX), 0.0f, sinf(cameraAngleX));
-
-	return Core::createViewMatrix(cameraPos, yaw, roll, pitch);
+	return Core::createViewMatrix(cameraPos, Camera::yaw, Camera::pitch, Camera::roll);
 }
 
 void drawObjectColor(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
@@ -183,6 +174,7 @@ void drawSunObjectTexture(obj::Model * model, glm::mat4 modelMatrix, GLuint zmie
 	glUseProgram(0);
 }
 
+
 glm::mat4 createScalingMatrix(float number) {
 	glm::mat4 scalingMatrix;
 	scalingMatrix[0][0] = number;
@@ -208,6 +200,7 @@ glm::mat4 createTranslationMatrix(float number) {
 	return translationMatrix;
 
 }
+
 
 void renderScene()
 {
@@ -313,7 +306,7 @@ void renderScene()
 	//zrob rotacje ksiezyca wokol siebie, odsun na odleglosc jaka by dzielila go od ziemi, zrob rotacje, przesun w miejsce ziemi, zrob rotacje wokol slonca
 
 	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
-	glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngleX + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
+	glm::mat4 shipModelMatrix = glm::translate(cameraPos + glm::vec3(0,0.5f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
 	//drawObjectColor(&sphereModel, glm::translate(glm::vec3(3.825, 0, 3.825)), glm::vec3(0.3f,0.4f,0.5f));
 	
@@ -328,9 +321,13 @@ void renderScene()
 	drawObjectTexture(&sphereModel, marsMoon2Matrix, moon);
 	//drawObjectProceduralTexture(&sphereModel, glm::translate(glm::vec3(-2, 0, -2)), glm::vec3(1.0f, 0.5f, 0.2f));
 
-
 	glutSwapBuffers();
 }
+
+
+
+
+
 
 void init()
 {
@@ -380,7 +377,7 @@ int main(int argc, char ** argv)
 	gLight2.attenuation = 0.005f;
 
 	init();
-	glutMotionFunc(mouseMove);
+	glutMotionFunc(mouse);
 	glutKeyboardFunc(keyboard);
 	glutDisplayFunc(renderScene);
 	glutIdleFunc(idle);

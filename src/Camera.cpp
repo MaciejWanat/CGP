@@ -1,5 +1,9 @@
 #include "Camera.h"
 
+float Camera::yaw = 0;
+float Camera::pitch = 0;
+float Camera::roll = 0;
+
 glm::mat4 Core::createPerspectiveMatrix(float zNear, float zFar)
 {
 	const float frustumScale = 1.1f;
@@ -33,19 +37,23 @@ glm::mat4 Core::createPerspectiveMatrix(float zNear, float zFar)
 
 glm::mat4 Core::createViewMatrix(glm::vec3 position, float yaw, float pitch, float roll)
 {
-	glm::mat4 Rx,Ry,Rz,M,T;
+	glm::mat4 Rx, Ry, Rz, M, T;
 	glm::mat4 Id = glm::mat4();
 
-	Rx = glm::rotate(Id, roll, glm::vec3(1.0f, 0.0f, 0.0f));
-	Ry = glm::rotate(Id, pitch, glm::vec3(0.0f, 1.0f, 0.0f));
-	Rz = glm::rotate(Id, yaw, glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1, 0, 0));
+	glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0, 1, 0));
+	glm::quat qRoll = glm::angleAxis(roll, glm::vec3(0, 0, 1));
+
+	glm::quat rotQuat = qYaw * qPitch * qRoll;
+
+	glm::mat4 RotMatrix = glm::mat4_cast(rotQuat);
+
+	//Rx = glm::rotate(Id, roll, glm::vec3(0.0f, 0.0f, 1.0f));
+	//Ry = glm::rotate(Id, pitch, glm::vec3(0.0f, 1.0f, 0.0f));
+	//Rz = glm::rotate(Id, yaw, glm::vec3(1.0f, 0.0f, 0.0f));
 
 	T = glm::translate(Id, position);
-	M = Rx * Ry * Rz * T;
+	M = RotMatrix * T;
 
 	return M;
 }
-
-
-
-
