@@ -23,7 +23,8 @@ GLuint mars;
 GLuint stars;
 GLuint ship;
 
-struct Light {
+struct Light 
+{
 	glm::vec3 position;
 	glm::vec3 intensities; //color of the light
 	float attenuation;
@@ -31,7 +32,6 @@ struct Light {
 
 Light gLight1;
 Light gLight2;
-
 
 Core::Shader_Loader shaderLoader;
 
@@ -49,7 +49,6 @@ glm::vec3 cameraDir;
 glm::mat4 cameraMatrix, perspectiveMatrix;
 
 glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
-
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -174,7 +173,6 @@ void drawSunObjectTexture(obj::Model * model, glm::mat4 modelMatrix, GLuint zmie
 	glUseProgram(0);
 }
 
-
 glm::mat4 createScalingMatrix(float number) {
 	glm::mat4 scalingMatrix;
 	scalingMatrix[0][0] = number;
@@ -200,7 +198,6 @@ glm::mat4 createTranslationMatrix(float number) {
 	return translationMatrix;
 
 }
-
 
 void renderScene()
 {
@@ -323,11 +320,6 @@ void renderScene()
 
 	glutSwapBuffers();
 }
-
-
-
-
-
 
 void init()
 {

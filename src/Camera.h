@@ -10,7 +10,8 @@ namespace Core
 	glm::mat4 createViewMatrix(glm::vec3 position, float yaw, float pitch, float roll);
 }
 
-class Camera {
-public:
-	static float yaw, pitch, roll;
+class Camera 
+{
+	public:
+		static float yaw, pitch, roll;
 };
