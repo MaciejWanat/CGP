@@ -72,10 +72,10 @@ void keyboard(unsigned char key, int x, int y)
 	case '0': gLight1.position = glm::vec3(0.0f, 0.0f, 0.0f); gLight1.intensities = glm::vec3(1, 1, 1); break;
 	case 'z': cameraAngleX -= angleSpeed; break;
 	case 'x': cameraAngleX += angleSpeed; break;
-	case 'w': cameraPos += cameraDir * moveSpeed; break;
-	case 's': cameraPos -= cameraDir * moveSpeed; break;
-	case 'd': cameraPos += glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
-	case 'a': cameraPos -= glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
+	case 's': cameraPos += cameraDir * moveSpeed; break;
+	case 'w': cameraPos -= cameraDir * moveSpeed; break;
+	case 'a': cameraPos += glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
+	case 'd': cameraPos -= glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
 	case 'c': cameraPos += glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeedUpDown; break;
 	case 'v': yaw  += 0.1; break;
 	}
@@ -88,23 +88,23 @@ void mouseMove(int x, int y)
 
 	if (x - margin > oldX)
 	{
-		roll += sen;
+		yaw += sen;
 		cameraAngleX += sen;
 	}
 	else if (x + margin < oldX)
 	{
-		roll -= sen;
+		yaw -= sen;
 		cameraAngleX -= sen;
 	}
 
 	if (y - margin > oldY)
 	{
-		pitch += sen;
+		pitch -= sen;
 		cameraAngleY += sen;
 	}		
 	else if (y + margin < oldY)
 	{
-		pitch -= sen;
+		pitch += sen;
 		cameraAngleY -= sen;
 	}		
 	
