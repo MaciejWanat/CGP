@@ -2,6 +2,7 @@
 #include "freeglut.h"
 #include "glm.hpp"
 #include "ext.hpp"
+#include "gtx/spline.hpp"
 #include <iostream>
 #include <cmath>
 
@@ -99,12 +100,12 @@ void mouseMove(int x, int y)
 
 	if (y - margin > oldY)
 	{
-		pitch -= sen;
+		pitch += sen;
 		cameraAngleY += sen;
 	}		
 	else if (y + margin < oldY)
 	{
-		pitch += sen;
+		pitch -= sen;
 		cameraAngleY -= sen;
 	}		
 	
@@ -116,7 +117,51 @@ glm::mat4 createCameraMatrix()
 {
 	cameraDir = glm::vec3(cosf(cameraAngleX), 0.0f, sinf(cameraAngleX));
 
-	return Core::createViewMatrix(cameraPos, yaw, roll, pitch);
+	return Core::createViewMatrix(cameraPos, yaw, pitch, roll);
+}
+
+
+void drawCurve(glm::vec4 v1, glm::vec4 t1, glm::vec4 v2, glm::vec4 t2, int points_in) 
+{
+	glm::vec4 *points = new glm::vec4[points_in];
+	points[0] = v1;
+	points[((points_in - 1) * 2 * 3)-1] = v2;
+
+	float *vertices = new float[(points_in-1)*2*3];
+
+	float step = (float)1 / (float)points_in;
+	int j = 0;
+	int k = 0;
+
+	for (float i = 0 + step; i < 1; i += step)
+	{
+		points[j] = glm::hermite(v1, t1, v2, t2, i);
+
+		vertices[k] = points[i-1];
+		vertices[k + 1] = points[i];
+		vertices[k + 2] = points[i] + translacja;
+
+		j++;
+		k = k + 3;
+	}
+
+	glm::mat4 modelMatrix = glm::mat4();
+
+	GLuint program = programColor;
+
+	glUseProgram(program);
+
+	glUniform3f(glGetUniformLocation(program, "objectColor"), 1,0,0);
+	glUniform3f(glGetUniformLocation(program, "lightDir"), lightDir.x, lightDir.y, lightDir.z);
+
+	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
+
+
+	Core::DrawVertexArray(vertices, (points_in - 1) * 2 * 3, 4);
+	
+	
 }
 
 void drawObjectColor(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
@@ -319,7 +364,7 @@ void renderScene()
 	
 	drawObjectTexture(&shipModel, shipModelMatrix, ship);
 	drawObjectTexture(&sphereModel, earthMatrix,  earth);
-	drawSunObjectTexture(&sphereModel, sunMatrix, sun);
+	//drawSunObjectTexture(&sphereModel, sunMatrix, sun);
 	drawObjectTexture(&sphereModel, moonMatrix, moon);
 	drawObjectTexture(&sphereModel, marsMatrix, mars);
 	drawObjectTexture(&sphereModel, merkuryMatrix, merkury);
@@ -364,6 +409,7 @@ void idle()
 
 int main(int argc, char ** argv)
 {
+	drawCurve(glm::vec4(0,0,0,0), glm::vec4(1,1,1,0), glm::vec4(10,0,0,0), glm::vec4(11,1,1,0), 250);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(200, 200);

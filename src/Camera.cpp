@@ -44,7 +44,7 @@ glm::mat4 Core::createViewMatrix(glm::vec3 position, float yaw, float pitch, flo
 	glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0, 1, 0));
 	glm::quat qRoll = glm::angleAxis(roll, glm::vec3(0, 0, 1));
 
-	glm::quat rotQuat = qYaw * qPitch * qRoll;
+	glm::quat rotQuat = qPitch * qYaw * qRoll;
 
 	glm::mat4 RotMatrix = glm::mat4_cast(rotQuat);
 
