@@ -54,6 +54,9 @@ float roll = 0.0;
 float oldX = 0;
 float oldY = 0;
 
+glm::vec4 points[250];
+int pointCounter = 0;
+
 void keyboard(unsigned char key, int x, int y)
 {	
 	float moveSpeed = 0.1f;
@@ -78,7 +81,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 'a': cameraPos += glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
 	case 'd': cameraPos -= glm::cross(cameraDir, glm::vec3(0,1,0)) * moveSpeed; break;
 	case 'c': cameraPos += glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeedUpDown; break;
-	case 'v': yaw  += 0.1; break;
+	case 'v': cameraPos -= glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeedUpDown; break;
 	}
 }
 
@@ -123,45 +126,16 @@ glm::mat4 createCameraMatrix()
 
 void drawCurve(glm::vec4 v1, glm::vec4 t1, glm::vec4 v2, glm::vec4 t2, int points_in) 
 {
-	glm::vec4 *points = new glm::vec4[points_in];
 	points[0] = v1;
-	points[((points_in - 1) * 2 * 3)-1] = v2;
+	points[points_in] = v2;
+	float step = 1.0 / (float)points_in;
+	float genPoint = 0.0;
 
-	float *vertices = new float[(points_in-1)*2*3];
-
-	float step = (float)1 / (float)points_in;
-	int j = 0;
-	int k = 0;
-
-	for (float i = 0 + step; i < 1; i += step)
+	for (int j = 1; j < points_in;j++)
 	{
-		points[j] = glm::hermite(v1, t1, v2, t2, i);
-
-		vertices[k] = points[i-1];
-		vertices[k + 1] = points[i];
-		vertices[k + 2] = points[i] + translacja;
-
-		j++;
-		k = k + 3;
+		points[j] = glm::hermite(v1, t1, v2, t2, genPoint);
+		genPoint += step;
 	}
-
-	glm::mat4 modelMatrix = glm::mat4();
-
-	GLuint program = programColor;
-
-	glUseProgram(program);
-
-	glUniform3f(glGetUniformLocation(program, "objectColor"), 1,0,0);
-	glUniform3f(glGetUniformLocation(program, "lightDir"), lightDir.x, lightDir.y, lightDir.z);
-
-	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
-	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
-	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
-
-
-	Core::DrawVertexArray(vertices, (points_in - 1) * 2 * 3, 4);
-	
-	
 }
 
 void drawObjectColor(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
@@ -250,6 +224,15 @@ glm::mat4 createTranslationMatrix(float number) {
 	translationMatrix[3][0] = number;
 	translationMatrix[3][1] = 0.0f;
 	translationMatrix[3][2] = number;
+	return translationMatrix;
+
+}
+
+glm::mat4 createTranslationMatrixXYZ(float X, float Y, float Z) {
+	glm::mat4 translationMatrix;
+	translationMatrix[3][0] = X;
+	translationMatrix[3][1] = Y;
+	translationMatrix[3][2] = Z;
 	return translationMatrix;
 
 }
@@ -355,15 +338,7 @@ void renderScene()
 	glm::mat4 marsMoon2ScalingMatrix = createScalingMatrix(0.12f);
 	glm::mat4 marsMoon2Matrix = marsAroundSunMatrix * marsTranslationMatrix * marsMoon2RotationAroundMarsMatrix * marsMoon2TranslationMatrix * marsMoon2RotationMatrix * marsMoon2ScalingMatrix;
 
-	//zrob rotacje ksiezyca wokol siebie, odsun na odleglosc jaka by dzielila go od ziemi, zrob rotacje, przesun w miejsce ziemi, zrob rotacje wokol slonca
-
-	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
-	glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngleX + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
-	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
-	//drawObjectColor(&sphereModel, glm::translate(glm::vec3(3.825, 0, 3.825)), glm::vec3(0.3f,0.4f,0.5f));
-	
-	drawObjectTexture(&shipModel, shipModelMatrix, ship);
-	drawObjectTexture(&sphereModel, earthMatrix,  earth);
+	drawObjectTexture(&sphereModel, earthMatrix, earth);
 	//drawSunObjectTexture(&sphereModel, sunMatrix, sun);
 	drawObjectTexture(&sphereModel, moonMatrix, moon);
 	drawObjectTexture(&sphereModel, marsMatrix, mars);
@@ -371,8 +346,20 @@ void renderScene()
 	drawObjectTexture(&sphereModel, venusMatrix, venus);
 	drawObjectTexture(&sphereModel, marsMoon1Matrix, moon);
 	drawObjectTexture(&sphereModel, marsMoon2Matrix, moon);
-	//drawObjectProceduralTexture(&sphereModel, glm::translate(glm::vec3(-2, 0, -2)), glm::vec3(1.0f, 0.5f, 0.2f));
+	
+	//zrob rotacje ksiezyca wokol siebie, odsun na odleglosc jaka by dzielila go od ziemi, zrob rotacje, przesun w miejsce ziemi, zrob rotacje wokol slonca
 
+	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
+	//glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngleX + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
+
+	pointCounter++;
+
+	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(points[pointCounter % 220].x, points[pointCounter % 220].y, points[pointCounter % 220].z);
+	drawSunObjectTexture(&shipModel, shipModelMatrix, ship);
+
+	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
+	//drawObjectColor(&sphereModel, glm::translate(glm::vec3(3.825, 0, 3.825)), glm::vec3(0.3f,0.4f,0.5f));
+	//drawObjectProceduralTexture(&sphereModel, glm::translate(glm::vec3(-2, 0, -2)), glm::vec3(1.0f, 0.5f, 0.2f));
 
 	glutSwapBuffers();
 }
@@ -393,6 +380,7 @@ void init()
 	venus = Core::LoadTexture("textures/venus.png");
 	stars = Core::LoadTexture("textures/stars2.png");
 	ship = Core::LoadTexture("textures/spaceship.png");
+	drawCurve(glm::vec4(0, 0, 0, 1), glm::vec4(10, 0, 0, 1), glm::vec4(0, 5, 0, 0), glm::vec4(0, -6, 0, 0), 220);
 }
 
 void shutdown()
@@ -409,7 +397,7 @@ void idle()
 
 int main(int argc, char ** argv)
 {
-	drawCurve(glm::vec4(0,0,0,0), glm::vec4(1,1,1,0), glm::vec4(10,0,0,0), glm::vec4(11,1,1,0), 250);
+
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(200, 200);
@@ -419,11 +407,11 @@ int main(int argc, char ** argv)
 
 	gLight1.intensities = glm::vec3(1, 1, 1);
 	gLight1.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	gLight1.attenuation = 0.005f;
+	gLight1.attenuation = 0.000f;
 
 	gLight2.intensities = glm::vec3(1, 1, 1);
 	gLight2.position = glm::vec3(0.0f, -10.0f, 0.0f);
-	gLight2.attenuation = 0.005f;
+	gLight2.attenuation = 0.000f;
 
 	init();
 	glutMotionFunc(mouseMove);
