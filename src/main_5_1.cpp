@@ -56,6 +56,7 @@ float oldY = 0;
 
 glm::vec4 points[250];
 int pointCounter = 0;
+float vertexArray[12];
 
 void keyboard(unsigned char key, int x, int y)
 {	
@@ -131,7 +132,7 @@ void drawCurve(glm::vec4 v1, glm::vec4 t1, glm::vec4 v2, glm::vec4 t2, int point
 	float step = 1.0 / (float)points_in;
 	float genPoint = 0.0;
 
-	for (int j = 1; j < points_in;j++)
+	for (int j = 1; j < points_in; j++)
 	{
 		points[j] = glm::hermite(v1, t1, v2, t2, genPoint);
 		genPoint += step;
@@ -360,6 +361,37 @@ void renderScene()
 	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
 	//drawObjectColor(&sphereModel, glm::translate(glm::vec3(3.825, 0, 3.825)), glm::vec3(0.3f,0.4f,0.5f));
 	//drawObjectProceduralTexture(&sphereModel, glm::translate(glm::vec3(-2, 0, -2)), glm::vec3(1.0f, 0.5f, 0.2f));
+
+	for (int i = 0; i < 220; i++)
+	{
+		vertexArray[0] = points[i].x;
+		vertexArray[1] = points[i].y;
+		vertexArray[2] = points[i].z;
+		vertexArray[3] = points[i].w;
+		vertexArray[4] = points[i + 1].x;
+		vertexArray[5] = points[i + 1].y;
+		vertexArray[6] = points[i + 1].z;
+		vertexArray[7] = points[i + 1].w;
+		vertexArray[8] = points[i].x + 0.1;
+		vertexArray[9] = points[i].y + 0.1;
+		vertexArray[10] = points[i].z + 0.1;
+		vertexArray[11] = points[i].w;
+		Core::DrawVertexArray(vertexArray, 3, 4);
+
+		vertexArray[0] = points[i + 1].x;
+		vertexArray[1] = points[i + 1].y;
+		vertexArray[2] = points[i + 1].z;
+		vertexArray[3] = points[i + 1].w;
+		vertexArray[4] = points[i].x + 0.1;
+		vertexArray[5] = points[i].y + 0.1;
+		vertexArray[6] = points[i].z + 0.1;
+		vertexArray[7] = points[i].w;
+		vertexArray[8] = points[i + 1].x + 0.1;
+		vertexArray[9] = points[i + 1].y + 0.1;
+		vertexArray[10] = points[i + 1].z + 0.1;
+		vertexArray[11] = points[i + 1].w;
+		Core::DrawVertexArray(vertexArray, 3, 4);
+	}
 
 	glutSwapBuffers();
 }
