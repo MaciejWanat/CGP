@@ -24,6 +24,16 @@ GLuint mars;
 GLuint stars;
 GLuint ship;
 
+
+struct Particle {
+	glm::vec3 pos;
+	glm::vec3 vel;
+	glm::quat rot;
+};
+
+std::vector<Particle> spaceships;
+
+
 struct Light {
 	glm::vec3 position;
 	glm::vec3 intensities; //color of the light
@@ -139,6 +149,9 @@ void drawCurve(glm::vec4 v1, glm::vec4 t1, glm::vec4 v2, glm::vec4 t2, int point
 	}
 }
 
+
+
+
 void drawObjectColor(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
 {
 	GLuint program = programColor;
@@ -238,11 +251,13 @@ glm::mat4 createTranslationMatrixXYZ(float X, float Y, float Z) {
 
 }
 
+
 void renderScene()
 {
 	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 	cameraMatrix = createCameraMatrix();
 	perspectiveMatrix = Core::createPerspectiveMatrix();
+
 
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -339,14 +354,14 @@ void renderScene()
 	glm::mat4 marsMoon2ScalingMatrix = createScalingMatrix(0.12f);
 	glm::mat4 marsMoon2Matrix = marsAroundSunMatrix * marsTranslationMatrix * marsMoon2RotationAroundMarsMatrix * marsMoon2TranslationMatrix * marsMoon2RotationMatrix * marsMoon2ScalingMatrix;
 
-	drawObjectTexture(&sphereModel, earthMatrix, earth);
+	//drawObjectTexture(&sphereModel, earthMatrix, earth);
 	//drawSunObjectTexture(&sphereModel, sunMatrix, sun);
-	drawObjectTexture(&sphereModel, moonMatrix, moon);
-	drawObjectTexture(&sphereModel, marsMatrix, mars);
-	drawObjectTexture(&sphereModel, merkuryMatrix, merkury);
-	drawObjectTexture(&sphereModel, venusMatrix, venus);
-	drawObjectTexture(&sphereModel, marsMoon1Matrix, moon);
-	drawObjectTexture(&sphereModel, marsMoon2Matrix, moon);
+	//drawObjectTexture(&sphereModel, moonMatrix, moon);
+	//drawObjectTexture(&sphereModel, marsMatrix, mars);
+	//drawObjectTexture(&sphereModel, merkuryMatrix, merkury);
+	//drawObjectTexture(&sphereModel, venusMatrix, venus);
+	//drawObjectTexture(&sphereModel, marsMoon1Matrix, moon);
+	//drawObjectTexture(&sphereModel, marsMoon2Matrix, moon);
 	
 	//zrob rotacje ksiezyca wokol siebie, odsun na odleglosc jaka by dzielila go od ziemi, zrob rotacje, przesun w miejsce ziemi, zrob rotacje wokol slonca
 
@@ -358,40 +373,52 @@ void renderScene()
 	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(points[pointCounter % 220].x, points[pointCounter % 220].y, points[pointCounter % 220].z);
 	drawSunObjectTexture(&shipModel, shipModelMatrix, ship);
 
+
+	for (int i = 0; i < spaceships.size(); i++)
+	{
+		spaceships[i].vel += (spaceships[i].pos - glm::vec3(points[pointCounter % 220].x, points[pointCounter % 220].y, points[pointCounter % 220].z))*0.05;
+		spaceships[i].pos += spaceships[i].vel * 0.05;
+
+		glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * glm::scale(glm::vec3(0.25f));
+		drawSunObjectTexture(&shipModel, shipModelMatrix, ship);
+
+	}
+
+
 	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
 	//drawObjectColor(&sphereModel, glm::translate(glm::vec3(3.825, 0, 3.825)), glm::vec3(0.3f,0.4f,0.5f));
 	//drawObjectProceduralTexture(&sphereModel, glm::translate(glm::vec3(-2, 0, -2)), glm::vec3(1.0f, 0.5f, 0.2f));
 
-	for (int i = 0; i < 220; i++)
-	{
-		vertexArray[0] = points[i].x;
-		vertexArray[1] = points[i].y;
-		vertexArray[2] = points[i].z;
-		vertexArray[3] = points[i].w;
-		vertexArray[4] = points[i + 1].x;
-		vertexArray[5] = points[i + 1].y;
-		vertexArray[6] = points[i + 1].z;
-		vertexArray[7] = points[i + 1].w;
-		vertexArray[8] = points[i].x + 0.1;
-		vertexArray[9] = points[i].y + 0.1;
-		vertexArray[10] = points[i].z + 0.1;
-		vertexArray[11] = points[i].w;
-		Core::DrawVertexArray(vertexArray, 3, 4);
+	//for (int i = 0; i < 220; i++)
+	//{
+	//	vertexArray[0] = points[i].x;
+	//	vertexArray[1] = points[i].y;
+	//	vertexArray[2] = points[i].z;
+	//	vertexArray[3] = points[i].w;
+	//	vertexArray[4] = points[i + 1].x;
+	//	vertexArray[5] = points[i + 1].y;
+	//	vertexArray[6] = points[i + 1].z;
+	//	vertexArray[7] = points[i + 1].w;
+	//	vertexArray[8] = points[i].x + 0.1;
+	//	vertexArray[9] = points[i].y + 0.1;
+	//	vertexArray[10] = points[i].z + 0.1;
+	//	vertexArray[11] = points[i].w;
+	//	Core::DrawVertexArray(vertexArray, 3, 4);
 
-		vertexArray[0] = points[i + 1].x;
-		vertexArray[1] = points[i + 1].y;
-		vertexArray[2] = points[i + 1].z;
-		vertexArray[3] = points[i + 1].w;
-		vertexArray[4] = points[i].x + 0.1;
-		vertexArray[5] = points[i].y + 0.1;
-		vertexArray[6] = points[i].z + 0.1;
-		vertexArray[7] = points[i].w;
-		vertexArray[8] = points[i + 1].x + 0.1;
-		vertexArray[9] = points[i + 1].y + 0.1;
-		vertexArray[10] = points[i + 1].z + 0.1;
-		vertexArray[11] = points[i + 1].w;
-		Core::DrawVertexArray(vertexArray, 3, 4);
-	}
+	//	vertexArray[0] = points[i + 1].x;
+	//	vertexArray[1] = points[i + 1].y;
+	//	vertexArray[2] = points[i + 1].z;
+	//	vertexArray[3] = points[i + 1].w;
+	//	vertexArray[4] = points[i].x + 0.1;
+	//	vertexArray[5] = points[i].y + 0.1;
+	//	vertexArray[6] = points[i].z + 0.1;
+	//	vertexArray[7] = points[i].w;
+	//	vertexArray[8] = points[i + 1].x + 0.1;
+	//	vertexArray[9] = points[i + 1].y + 0.1;
+	//	vertexArray[10] = points[i + 1].z + 0.1;
+	//	vertexArray[11] = points[i + 1].w;
+	//	Core::DrawVertexArray(vertexArray, 3, 4);
+	//}
 
 	glutSwapBuffers();
 }
@@ -413,6 +440,15 @@ void init()
 	stars = Core::LoadTexture("textures/stars2.png");
 	ship = Core::LoadTexture("textures/spaceship.png");
 	drawCurve(glm::vec4(0, 0, 0, 1), glm::vec4(10, 0, 0, 1), glm::vec4(0, 5, 0, 0), glm::vec4(0, -6, 0, 0), 220);
+	for (int i = 0; i < 50; i++) {
+		Particle x;
+		float rx = -2.0 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0 - (-2.0))));
+		float ry = -2.0 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0 - (-2.0))));
+		float rz = -2.0 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0 - (-2.0))));
+		x.pos = glm::vec3(rx, ry, rz);
+		x.vel = glm::vec3(1, 1, 1);
+		spaceships.push_back(x);
+	}
 }
 
 void shutdown()
