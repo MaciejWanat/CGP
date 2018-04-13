@@ -64,9 +64,29 @@ float roll = 0.0;
 float oldX = 0;
 float oldY = 0;
 
-glm::vec4 points[250];
+glm::vec3 points[220];
+glm::vec3 pointsClosure[220];
+
+glm::vec3 * pointsSum = new glm::vec3[440];
+
 int pointCounter = 0;
 float vertexArray[12];
+
+int t=0;
+
+glm::vec3 catmull_rom_spline(const std::vector<glm::vec3>& cp, float t)
+{
+    // indices of the relevant control points
+    int i0 = glm::clamp<int>(t - 1, 0, cp.size() - 1);
+    int i1 = glm::clamp<int>(t,     0, cp.size() - 1);
+    int i2 = glm::clamp<int>(t + 1, 0, cp.size() - 1);
+    int i3 = glm::clamp<int>(t + 2, 0, cp.size() - 1);
+
+    // parameter on the local curve interval
+    float local_t = glm::fract(t);
+
+    return glm::catmullRom(cp[i0], cp[i1], cp[i2], cp[i3], local_t);
+}
 
 void keyboard(unsigned char key, int x, int y)
 {	
@@ -149,6 +169,20 @@ void drawCurve(glm::vec4 v1, glm::vec4 t1, glm::vec4 v2, glm::vec4 t2, int point
 	}
 }
 
+void drawClosure(glm::vec4 v1, glm::vec4 t1, glm::vec4 v2, glm::vec4 t2, int points_in)
+{
+	pointsClosure[0] = v1;
+	pointsClosure[points_in] = v2;
+	float step = 1.0 / (float)points_in;
+	float genPoint = 0.0;
+
+	for (int j = 1; j < points_in; j++)
+	{
+		pointsClosure[j] = glm::hermite(v1, t1, v2, t2, genPoint);
+		genPoint += step;
+	}
+}
+
 
 
 
@@ -180,10 +214,6 @@ void drawObjectTexture(obj::Model * model, glm::mat4 modelMatrix, GLuint zmienna
 	glUniform3f(glGetUniformLocation(program, "light1.position"), gLight1.position.x,gLight1.position.y,gLight1.position.z);
 	glUniform3f(glGetUniformLocation(program, "light1.intensities"), gLight1.intensities.x, gLight1.intensities.y, gLight1.intensities.z);
 	glUniform1f(glGetUniformLocation(program, "light1.attenuation"), gLight1.attenuation);
-
-//	glUniform3f(glGetUniformLocation(program, "light2.position"), gLight2.position.x, gLight2.position.y, gLight2.position.z);
-//	glUniform3f(glGetUniformLocation(program, "light2.intensities"), gLight2.intensities.x, gLight2.intensities.y, gLight2.intensities.z);
-//	glUniform1f(glGetUniformLocation(program, "light2.attenuation"), gLight2.attenuation);
 
 	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
@@ -251,6 +281,16 @@ glm::mat4 createTranslationMatrixXYZ(float X, float Y, float Z) {
 
 }
 
+glm::vec3 separationV2(Particle enemy) {
+	glm::vec3 v2 = glm::vec3(0);
+	for (int i = 0; i < spaceships.size(); i++) {
+		if (glm::length(enemy.pos - spaceships[i].pos) < 2) {
+			v2 = v2 - (enemy.pos - spaceships[i].pos);
+		}
+	}
+	return v2;
+}
+
 
 void renderScene()
 {
@@ -271,7 +311,7 @@ void renderScene()
 	gluOrtho2D(0.0f, 1.0f, 0.0f, 1.0f);
 	glEnable(GL_TEXTURE_2D);
 	glMatrixMode(GL_MODELVIEW);
-	glBindTexture(GL_TEXTURE_2D, stars);    // Background texture
+	//glBindTexture(GL_TEXTURE_2D, stars);    // Background texture
 
 
 	// No depth buffer writes for background
@@ -370,20 +410,31 @@ void renderScene()
 
 	pointCounter++;
 
-	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(points[pointCounter % 220].x, points[pointCounter % 220].y, points[pointCounter % 220].z);
-	drawSunObjectTexture(&shipModel, shipModelMatrix, ship);
+	//glm::vec3 shipPath = glm::vec3(points[pointCounter % 220].x, points[pointCounter % 220].y, points[pointCounter % 220].z);
 
+	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(pointsSum[pointCounter % 440].x, pointsSum[pointCounter % 440].y, pointsSum[pointCounter % 440].z);
+	drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
+
+
+	glm::vec3 sum = glm::vec3(0);
+	for (int i = 0; i < spaceships.size(); i++)
+	{
+		sum += spaceships[i].vel;
+	}
 
 	for (int i = 0; i < spaceships.size(); i++)
 	{
-		spaceships[i].vel += (spaceships[i].pos - glm::vec3(points[pointCounter % 220].x, points[pointCounter % 220].y, points[pointCounter % 220].z))*0.05;
-		spaceships[i].pos += spaceships[i].vel * 0.05;
-
-		glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * glm::scale(glm::vec3(0.25f));
-		drawSunObjectTexture(&shipModel, shipModelMatrix, ship);
-
+		float weightV1 = 0.001;
+		float weightV2 = 0.001;
+		float weightV3 = 0.001;
+		glm::vec3 v1Attract = points[t % 250] - spaceships[i].pos;
+		spaceships[i].vel += (weightV1 * v1Attract) + (weightV2 * separationV2(spaceships[i])) + (weightV3 * ((sum / spaceships.size()) - spaceships[i].vel));
+		spaceships[i].pos += spaceships[i].vel;
+		glm::mat4 enemyMatrix = glm::translate(spaceships[i].pos) * glm::scale(glm::vec3(0.25f));
+		drawObjectColor(&shipModel, enemyMatrix, glm::vec3(0.6f));
 	}
 
+	t++;
 
 	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
 	//drawObjectColor(&sphereModel, glm::translate(glm::vec3(3.825, 0, 3.825)), glm::vec3(0.3f,0.4f,0.5f));
@@ -394,34 +445,29 @@ void renderScene()
 	//	vertexArray[0] = points[i].x;
 	//	vertexArray[1] = points[i].y;
 	//	vertexArray[2] = points[i].z;
-	//	vertexArray[3] = points[i].w;
 	//	vertexArray[4] = points[i + 1].x;
 	//	vertexArray[5] = points[i + 1].y;
 	//	vertexArray[6] = points[i + 1].z;
-	//	vertexArray[7] = points[i + 1].w;
 	//	vertexArray[8] = points[i].x + 0.1;
 	//	vertexArray[9] = points[i].y + 0.1;
 	//	vertexArray[10] = points[i].z + 0.1;
-	//	vertexArray[11] = points[i].w;
-	//	Core::DrawVertexArray(vertexArray, 3, 4);
+	//	Core::DrawVertexArray(vertexArray, 3, 3);
 
 	//	vertexArray[0] = points[i + 1].x;
 	//	vertexArray[1] = points[i + 1].y;
 	//	vertexArray[2] = points[i + 1].z;
-	//	vertexArray[3] = points[i + 1].w;
 	//	vertexArray[4] = points[i].x + 0.1;
 	//	vertexArray[5] = points[i].y + 0.1;
 	//	vertexArray[6] = points[i].z + 0.1;
-	//	vertexArray[7] = points[i].w;
 	//	vertexArray[8] = points[i + 1].x + 0.1;
 	//	vertexArray[9] = points[i + 1].y + 0.1;
 	//	vertexArray[10] = points[i + 1].z + 0.1;
-	//	vertexArray[11] = points[i + 1].w;
-	//	Core::DrawVertexArray(vertexArray, 3, 4);
+	//	Core::DrawVertexArray(vertexArray, 3, 3);
 	//}
 
 	glutSwapBuffers();
 }
+
 
 void init()
 {
@@ -440,16 +486,23 @@ void init()
 	stars = Core::LoadTexture("textures/stars2.png");
 	ship = Core::LoadTexture("textures/spaceship.png");
 	drawCurve(glm::vec4(0, 0, 0, 1), glm::vec4(10, 0, 0, 1), glm::vec4(0, 5, 0, 0), glm::vec4(0, -6, 0, 0), 220);
-	for (int i = 0; i < 50; i++) {
-		Particle x;
-		float rx = -2.0 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0 - (-2.0))));
-		float ry = -2.0 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0 - (-2.0))));
-		float rz = -2.0 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0 - (-2.0))));
-		x.pos = glm::vec3(rx, ry, rz);
-		x.vel = glm::vec3(1, 1, 1);
-		spaceships.push_back(x);
+	drawClosure( glm::vec4(0, 5, 0, 0), glm::vec4(0, -6, 0, 0), glm::vec4(0, 0, 0, 1), glm::vec4(10, 0, 0, 1), 220);
+
+	std::copy(points, points + 220, pointsSum);
+	std::copy(pointsClosure, pointsClosure + 220, pointsSum + 220);
+
+	for (int i = 0; i < 440; i++) {
+		printf("%d - %f\n", i, pointsSum[i]);
+	}
+
+	for (int i = 1; i <= 30; i++) {
+		Particle enemy;
+		enemy.pos = glm::vec3(1 + i / 2, 1, 1);
+		spaceships.push_back(enemy);
 	}
 }
+
+
 
 void shutdown()
 {
