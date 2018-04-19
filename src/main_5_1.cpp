@@ -28,7 +28,10 @@ glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
 
 //wektor punktów do naszej krzywej
 //jeszcze nie porusza siê wzglêdem kierunku
-glm::vec4 circle_points[220];
+glm::vec3 circle_points[220];
+glm::vec3 tangent[220];
+glm::vec3 normal[220];
+glm::vec3 binormal[220];
 int pointCounter = 0;
 glm::vec3 ship_pos;
 
@@ -131,13 +134,41 @@ void drawCircle(GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfS
 		circle_points[i].x = circleVerticesX[i];
 		circle_points[i].y = circleVerticesY[i];
 		circle_points[i].z = circleVerticesZ[i];
-		circle_points[i].w = 0;
 	}
 
 	//for (int i = 0; i < numberOfVertices; i++)
 	//{
 	//	printf("%f %f %f \n", circle_points[i].x, circle_points[i].y, circle_points[i].z);
 	//}
+}
+
+void parallel_transport() {
+	glm::vec3 T, N, B;
+	for (int i = 0; i < 119; i++) {
+		T = glm::normalize(circle_points[i + 1] - circle_points[i]);
+		//printf("%f %f %f \n", T0.x, T0.y, T0.z);
+		tangent[i] = T;
+	}
+	T = glm::normalize(circle_points[219] - circle_points[218]);
+	tangent[219] = T;
+	N = (tangent[0] / glm::length(tangent[0]));
+	normal[0] = N;
+
+	for (int i = 0; i < 218; i++)
+	{
+		B = glm::cross(tangent[i], tangent[i + 1]);
+		if (glm::length(B) == 0)
+			normal[i + 1] = normal[i];
+		else {
+			B = (B / glm::length(B));
+			float theta = acosf(glm::dot(tangent[i],tangent[i+1]));
+			normal[i + 1] = glm::rotate(tangent[i], theta, B);
+		}
+		binormal[i] = glm::cross(tangent[i], normal[i]);
+		binormal[i] = glm::normalize(binormal[i]);
+	}
+	binormal[219] = glm::cross(tangent[219], normal[219]);
+	binormal[219] = glm::normalize(binormal[219]);
 }
 
 void initialise_particles(int qty)
@@ -184,25 +215,17 @@ void renderScene()
 		v1 = (ship_pos - spaceships[i].pos)/100;
 		v1 = m1 * v1;
 		//v2 = rule2: keep a distance away from other objects
-		for (int j = 0; j < spaceships.size(); j++)
-		{
+		for (int j = 0; j < spaceships.size(); j++){
 			v2 = glm::vec3(0, 0, 0);
 			if (j != i) //boid which is near by
-			{
 				if (glm::length(spaceships[j].pos - spaceships[i].pos) < 0.08)
-				{
 					v2 -= (spaceships[j].pos - spaceships[i].pos);
-				}
-			}
 		}
 		v2 = m2 * v2;
 		//v3 = rule3: match velocity with near boids
-		for (int j = 0; j < spaceships.size(); j++)
-		{
+		for (int j = 0; j < spaceships.size(); j++){
 			if (j != i)
-			{
 				v3 += spaceships[j].vel;
-			}
 		}
 		v3 = v3 / (spaceships.size() - 1);
 		v3 = (v3 - spaceships[i].vel) / 8;
@@ -212,9 +235,7 @@ void renderScene()
 		//limiting the speed
 		int vlim = 5;
 		if (glm::length(spaceships[i].vel) > vlim)
-		{
 			spaceships[i].vel = (spaceships[i].vel / glm::length(spaceships[i].vel)) * vlim;
-		}
 
 		spaceships[i].pos += spaceships[i].vel;
 	}
@@ -233,6 +254,7 @@ void init()
 	sphereModel = obj::loadModelFromFile("models/sphere.obj");
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
 	drawCircle(0, 0, 0, 10, 219);
+	parallel_transport();
 	initialise_particles(50);
 }
 
