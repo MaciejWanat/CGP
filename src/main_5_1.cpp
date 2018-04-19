@@ -177,8 +177,12 @@ void renderScene()
 		drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
 
 		glm::vec3 v1, v2, v3;
+		int m1 = 1;
+		int m2 = 1;
+		int m3 = 2;
 		//v1 = rule1: centre_of_mass = ship_pos;
 		v1 = (ship_pos - spaceships[i].pos)/100;
+		v1 = m1 * v1;
 		//v2 = rule2: keep a distance away from other objects
 		for (int j = 0; j < spaceships.size(); j++)
 		{
@@ -191,6 +195,7 @@ void renderScene()
 				}
 			}
 		}
+		v2 = m2 * v2;
 		//v3 = rule3: match velocity with near boids
 		for (int j = 0; j < spaceships.size(); j++)
 		{
@@ -201,8 +206,16 @@ void renderScene()
 		}
 		v3 = v3 / (spaceships.size() - 1);
 		v3 = (v3 - spaceships[i].vel) / 8;
+		v3 = m3 * v3;
 
 		spaceships[i].vel += v1 + v2 + v3;
+		//limiting the speed
+		int vlim = 5;
+		if (glm::length(spaceships[i].vel) > vlim)
+		{
+			spaceships[i].vel = (spaceships[i].vel / glm::length(spaceships[i].vel)) * vlim;
+		}
+
 		spaceships[i].pos += spaceships[i].vel;
 	}
 
