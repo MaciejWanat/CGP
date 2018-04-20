@@ -202,7 +202,7 @@ void parallel_transport() {
 		else {
 			B = (B / glm::length(B));
 			float theta = acosf(glm::dot(tangent[i],tangent[i+1]));
-			//normal[i + 1] = glm::rotate(theta, B) * tangent[i];
+			normal[i + 1] = glm::rotate(theta, B) * glm::vec4(normal[i], 0.0f);
 		}
 		binormal[i] = glm::cross(tangent[i], normal[i]);
 		binormal[i] = glm::normalize(binormal[i]);
