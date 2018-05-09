@@ -185,17 +185,17 @@ void parallel_transport() {
 	glm::vec3 normal[220];
 	glm::vec3 binormal[220];
 	glm::vec3 T, N, B;
-	for (int i = 0; i < 119; i++) {
+	for (int i = 0; i < 219; i++) {
 		T = glm::normalize(circle_points[i + 1] - circle_points[i]);
 		//printf("%f %f %f \n", T0.x, T0.y, T0.z);
 		tangent[i] = T;
 	}
-	T = glm::normalize(circle_points[219] - circle_points[218]);
+	T = glm::normalize(circle_points[1] - circle_points[219]);
 	tangent[219] = T;
 	N = (tangent[0] / glm::length(tangent[0]));
 	normal[0] = N;
 
-	for (int i = 0; i < 218; i++)
+	for (int i = 0; i < 219; i++)
 	{
 		B = glm::cross(tangent[i], tangent[i + 1]);
 		if (glm::length(B) == 0)
@@ -215,7 +215,7 @@ void parallel_transport() {
 	for (int i = 0; i < 220; i++) {
 		BNT[0] = binormal[i];
 		BNT[1] = normal[i];
-		BNT[2] = -tangent[i];
+		BNT[2] = tangent[i];
 		rotations[i] = BNT;
 	}
 }
@@ -246,7 +246,7 @@ void renderScene()
 	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
 	//glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	ship_pos = glm::vec3(circle_points[pointCounter % 220].x, circle_points[pointCounter % 220].y, circle_points[pointCounter % 220].z);
-	glm::mat4 shipModelMatrix = rotations[pointCounter % 220]*createTranslationMatrixXYZ(ship_pos.x, ship_pos.y, ship_pos.z);
+	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(ship_pos.x, ship_pos.y, ship_pos.z)*rotations[pointCounter % 220] ;
 	drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.7f,0.0f,0.0f));
 	pointCounter++;
 
