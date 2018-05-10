@@ -4,6 +4,7 @@
 #include "ext.hpp"
 #include <iostream>
 #include <cmath>
+#include <windows.h>
 
 #include "Shader_Loader.h"
 #include "Render_Utils.h"
@@ -34,18 +35,21 @@ float oldY = 0;;
 
 glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
 
-//wektor punktów do naszej krzywej
-//jeszcze nie porusza siê wzglêdem kierunku
-glm::vec3 circle_points[220];
-glm::mat4 rotations[220];
+glm::vec3 circle_points[220]; //wektor punktów do naszej krzywej
+glm::mat4 rotations[220]; //macierz rotacji BNT - wzd³u¿ krzywej
 int pointCounter = 0;
 glm::vec3 ship_pos;
 
 //nasze piêkne cz¹steczki
 struct Particle {
 	glm::vec3 pos;
-	glm::vec3 vel;
 	glm::quat rot;
+
+	glm::vec3 vel; //linMom??
+	glm::vec3 angVel; //AngMom??
+
+	glm::vec3 force;
+	glm::vec3 torque;
 };
 
 std::vector<Particle> spaceships;
@@ -150,6 +154,7 @@ void drawObjectTexture(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 colo
 	glUseProgram(0);
 }
 
+//wyznaczenie punktów na okrêgu
 void drawCircle(GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfSides)
 {
 	GLint numberOfVertices = numberOfSides + 1;
@@ -173,13 +178,9 @@ void drawCircle(GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfS
 		circle_points[i].y = circleVerticesY[i];
 		circle_points[i].z = circleVerticesZ[i];
 	}
-
-	//for (int i = 0; i < numberOfVertices; i++)
-	//{
-	//	printf("%f %f %f \n", circle_points[i].x, circle_points[i].y, circle_points[i].z);
-	//}
 }
 
+//wyznaczenie wektorów BNT
 void parallel_transport() {
 	glm::vec3 tangent[220];
 	glm::vec3 normal[220];
@@ -187,7 +188,6 @@ void parallel_transport() {
 	glm::vec3 T, N, B;
 	for (int i = 0; i < 219; i++) {
 		T = glm::normalize(circle_points[i + 1] - circle_points[i]);
-		//printf("%f %f %f \n", T0.x, T0.y, T0.z);
 		tangent[i] = T;
 	}
 	T = glm::normalize(circle_points[1] - circle_points[219]);
@@ -246,25 +246,26 @@ void renderScene()
 	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
 	//glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	ship_pos = glm::vec3(circle_points[pointCounter % 220].x, circle_points[pointCounter % 220].y, circle_points[pointCounter % 220].z);
-	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(ship_pos.x, ship_pos.y, ship_pos.z)*rotations[pointCounter % 220] ;
+	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(ship_pos.x, ship_pos.y, ship_pos.z) * rotations[pointCounter % 220];
 	drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.7f,0.0f,0.0f));
 	pointCounter++;
+	Sleep(50);
 
 	//przemieszczanie stateczków
 	for (int i = 0; i < spaceships.size(); i++)
 	{
-		glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * glm::scale(glm::vec3(0.10f));
+		glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * rotations[pointCounter % 220] * glm::scale(glm::vec3(0.10f));
 		drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.0f,0.0f,0.7f));
 
 		glm::vec3 v1, v2, v3;
-		int m1 = 1;
-		int m2 = 1;
-		int m3 = 2;
+		float m1 = 5;
+		float m2 = 1;
+		float m3 = 0.05;
 		//v1 = rule1: centre_of_mass = ship_pos;
-		v1 = (ship_pos - spaceships[i].pos)/100;
+		v1 = glm::normalize(ship_pos - spaceships[i].pos);
 		v1 = m1 * v1;
 		//v2 = rule2: keep a distance away from other objects
-		if (glm::length(ship_pos - spaceships[i].pos) < 2)
+		if (glm::length(ship_pos - spaceships[i].pos) < 2.5)
 			spaceships[i].pos -= (ship_pos - spaceships[i].pos);
 		for (int j = 0; j < spaceships.size(); j++){
 			v2 = glm::vec3(0, 0, 0);
