@@ -204,7 +204,7 @@ void parallel_transport() {
 		else {
 			B = (B / glm::length(B));
 			float theta = acosf(glm::dot(tangent[i],tangent[i+1]));
-			normal[i + 1] = glm::rotate(theta, B) * glm::vec4(normal[i], 0.0f);
+			normal[i + 1] =  glm::vec4(normal[i], 0.0f) * glm::rotate(theta, B);
 		}
 		binormal[i] = glm::cross(tangent[i], normal[i]);
 		binormal[i] = glm::normalize(binormal[i]);
@@ -247,7 +247,7 @@ void renderScene()
 	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
 	//glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	ship_pos = glm::vec3(circle_points[pointCounter % 220].x, circle_points[pointCounter % 220].y, circle_points[pointCounter % 220].z);
-	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(ship_pos.x, ship_pos.y, ship_pos.z) * rotations[pointCounter % 220];
+	glm::mat4 shipModelMatrix =  glm::translate(glm::vec3(ship_pos.x, ship_pos.y, ship_pos.z)) * rotations[pointCounter % 220];
 	drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.7f,0.0f,0.0f));
 	pointCounter++;
 	//Sleep(50);
