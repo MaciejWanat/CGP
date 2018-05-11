@@ -15,6 +15,7 @@
     <ClCompile Include="src\main_5_1.cpp" />
     <ClCompile Include="src\picopng.cpp" />
     <ClCompile Include="src\Render_Utils.cpp" />
+    <ClCompile Include="src\Rigid_Body.cpp" />
     <ClCompile Include="src\Shader_Loader.cpp" />
     <ClCompile Include="src\Texture.cpp" />
   </ItemGroup>

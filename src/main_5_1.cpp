@@ -11,6 +11,7 @@
 #include "Camera.h"
 #include "Texture.h"
 
+
 GLuint programColor;
 GLuint programTexture;
 
@@ -249,7 +250,7 @@ void renderScene()
 	glm::mat4 shipModelMatrix = createTranslationMatrixXYZ(ship_pos.x, ship_pos.y, ship_pos.z) * rotations[pointCounter % 220];
 	drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.7f,0.0f,0.0f));
 	pointCounter++;
-	Sleep(50);
+	//Sleep(50);
 
 	//przemieszczanie stateczków
 	for (int i = 0; i < spaceships.size(); i++)
@@ -259,7 +260,7 @@ void renderScene()
 
 		glm::vec3 v1, v2, v3;
 		float m1 = 5;
-		float m2 = 1;
+		float m2 = 3;
 		float m3 = 0.05;
 		//v1 = rule1: centre_of_mass = ship_pos;
 		v1 = glm::normalize(ship_pos - spaceships[i].pos);
@@ -270,7 +271,7 @@ void renderScene()
 		for (int j = 0; j < spaceships.size(); j++){
 			v2 = glm::vec3(0, 0, 0);
 			if (j != i) //boid which is near by
-				if (glm::length(spaceships[j].pos - spaceships[i].pos) < 0.5)
+				if (glm::length(spaceships[j].pos - spaceships[i].pos) < 2)
 					v2 -= (spaceships[j].pos - spaceships[i].pos);
 		}
 		v2 = m2 * v2;
