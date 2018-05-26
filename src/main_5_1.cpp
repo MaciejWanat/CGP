@@ -51,9 +51,34 @@ struct Particle {
 
 	glm::vec3 force;
 	glm::vec3 torque;
+
+	float mass;
 };
 
 std::vector<Particle> spaceships;
+glm::mat3 inertiaBody = glm::mat3(glm::vec3(1, 0, 0), glm::vec3(0, 0.5, 0), glm::vec3(0, 0, 3));
+float M;
+glm::vec3 F;
+
+float mass_sum(std::vector<Particle> bodies)
+{
+	float M = 0;
+	for (int i = 0; i < spaceships.size; i++)
+	{
+		M += spaceships[i].mass;
+	}
+	return M;
+}
+
+glm::vec3 force_sum(std::vector<Particle> bodies)
+{
+	glm::vec3 F;
+	for (int i = 0; i < spaceships.size; i++)
+	{
+		F += spaceships[i].force;
+	}
+	return F;
+}
 
 glm::mat4 createTranslationMatrixXYZ(float X, float Y, float Z) {
 	glm::mat4 translationMatrix;
@@ -229,6 +254,8 @@ void initialise_particles(int qty)
 		x.pos.y = -2.0 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0 - (-2.0))));
 		x.pos.z = -2.0 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0 - (-2.0))));
 		x.vel = glm::vec3(0, 0, 0);
+		x.mass = ((float)rand()) / (float)RAND_MAX;
+		x.force = glm::vec3(((float)rand()) / (float)RAND_MAX, 0.2, 0.3);
 		spaceships.push_back(x);
 	}
 }
@@ -255,7 +282,8 @@ void renderScene()
 	//przemieszczanie stateczków
 	for (int i = 0; i < spaceships.size(); i++)
 	{
-		glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * rotations[pointCounter % 220] * glm::scale(glm::vec3(0.10f));
+		//glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * rotations[pointCounter % 220] * glm::scale(glm::vec3(0.10f));
+		glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * glm::scale(glm::vec3(0.10f));
 		drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.0f,0.0f,0.7f));
 
 		glm::vec3 v1, v2, v3;
@@ -291,6 +319,25 @@ void renderScene()
 			spaceships[i].vel = (spaceships[i].vel / glm::length(spaceships[i].vel)) * vlim;
 
 		spaceships[i].pos += spaceships[i].vel;
+		
+		//rigid body - still working on it
+		//chyba jednak si³a siê zmienia z ka¿dym momentem, ale pieprzê to na razie
+		glm::vec3 x = spaceships[i].pos;
+		glm::vec3 v = spaceships[i].vel;
+		glm::mat3 R = rotations[pointCounter % 220];
+		glm::vec3 w = spaceships[i].angVel;
+		glm::mat3 I_1 = glm::transpose(R) * inertiaBody * R;
+		glm::vec3 L = w * inertiaBody;
+		float step = 1;
+
+		for (int j = 1; j < spaceships.size; j++)
+		{
+			glm::vec3 r_j = spaceships[j].pos + glm::vec3(0.5, 0.3, 0.1);
+			glm::vec3 torque = glm::cross(r_j,spaceships[j].force);
+		}
+
+
+			
 	}
 
 	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(2,0,2)), glm::vec3(0.8f, 0.2f, 0.3f));
@@ -309,6 +356,8 @@ void init()
 	drawCircle(0, 0, 0, 5, 219);
 	parallel_transport();
 	initialise_particles(50);
+	M = mass_sum(spaceships);
+	F = force_sum(spaceships);
 }
 
 void shutdown()
