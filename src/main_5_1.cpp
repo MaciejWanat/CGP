@@ -11,11 +11,14 @@
 #include "Camera.h"
 #include "Texture.h"
 
-
 GLuint programColor;
 GLuint programTexture;
+GLuint programSkybox;
+
 
 Core::Shader_Loader shaderLoader;
+
+int cubeMapID;
 
 obj::Model shipModel;
 obj::Model sphereModel;
@@ -62,6 +65,63 @@ glm::mat4 createTranslationMatrixXYZ(float X, float Y, float Z) {
 	translationMatrix[3][2] = Z;
 	return translationMatrix;
 }
+
+GLuint textureAsteroid, xpos, xneg, ypos, yneg, zpos, zneg;
+
+GLuint cubemapTexture;
+
+std::vector<glm::vec4> planets;
+
+const float cubeVertices[] = {
+	30.5f, 30.5f, 30.5f, 1.0f,
+	30.5f, -30.5f, 30.5f, 1.0f,
+	-30.5f, 30.5f, 30.5f, 1.0f,
+
+	30.5f, -30.5f, 30.5f, 1.0f,
+	-30.5f, -30.5f, 30.5f, 1.0f,
+	-30.5f, 30.5f, 30.5f, 1.0f,
+
+	30.5f, 30.5f, -30.5f, 1.0f,
+	-30.5f, 30.5f, -30.5f, 1.0f,
+	30.5f, -30.5f, -30.5f, 1.0f,
+
+	30.5f, -30.5f, -30.5f, 1.0f,
+	-30.5f, 30.5f, -30.5f, 1.0f,
+	-30.5f, -30.5f, -30.5f, 1.0f,
+
+	-30.5f, 30.5f, 30.5f, 1.0f,
+	-30.5f, -30.5f, 30.5f, 1.0f,
+	-30.5f, -30.5f, -30.5f, 1.0f,
+
+	-30.5f, 30.5f, 30.5f, 1.0f,
+	-30.5f, -30.5f, -30.5f, 1.0f,
+	-30.5f, 30.5f, -30.5f, 1.0f,
+
+	30.5f, 30.5f, 30.5f, 1.0f,
+	30.5f, -30.5f, -30.5f, 1.0f,
+	30.5f, -30.5f, 30.5f, 1.0f,
+
+	30.5f, 30.5f, 30.5f, 1.0f,
+	30.5f, 30.5f, -30.5f, 1.0f,
+	30.5f, -30.5f, -30.5f, 1.0f,
+
+	30.5f, 30.5f, -30.5f, 1.0f,
+	30.5f, 30.5f, 30.5f, 1.0f,
+	-30.5f, 30.5f, 30.5f, 1.0f,
+
+	30.5f, 30.5f, -30.5f, 1.0f,
+	-30.5f, 30.5f, 30.5f, 1.0f,
+	-30.5f, 30.5f, -30.5f, 1.0f,
+
+	30.5f, -30.5f, -30.5f, 1.0f,
+	-30.5f, -30.5f, 30.5f, 1.0f,
+	30.5f, -30.5f, 30.5f, 1.0f,
+
+	30.5f, -30.5f, -30.5f, 1.0f,
+	-30.5f, -30.5f, -30.5f, 1.0f,
+	-30.5f, -30.5f, 30.5f, 1.0f,
+};
+
 
 void mouseMove(int x, int y)
 {
@@ -137,20 +197,40 @@ void drawObjectColor(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
 	glUseProgram(0);
 }
 
-void drawObjectTexture(obj::Model * model, glm::mat4 modelMatrix, glm::vec3 color)
+void drawObjectTexture(obj::Model * model, glm::mat4 modelMatrix, GLuint textureId)
 {
 	GLuint program = programTexture;
 
 	glUseProgram(program);
 
-	glUniform3f(glGetUniformLocation(program, "objectColor"), color.x, color.y, color.z);
 	glUniform3f(glGetUniformLocation(program, "lightDir"), lightDir.x, lightDir.y, lightDir.z);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
+	Core::SetActiveTexture(textureId, "textureSampler", program, 0);
 
 	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
 
 	Core::DrawModel(model);
+
+	glUseProgram(0);
+}
+
+void drawSkybox(GLuint cubemapID) 
+{
+	GLuint program = programSkybox;
+
+	glUseProgram(program);
+
+	Core::SetActiveTexture(cubemapID, "skybox", program, 0);
+
+	glm::mat4 transformation = perspectiveMatrix * cameraMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
+
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapID);
+
+	Core::DrawVertexArray(cubeVertices, 36, 4);
 
 	glUseProgram(0);
 }
@@ -296,6 +376,14 @@ void renderScene()
 	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(2,0,2)), glm::vec3(0.8f, 0.2f, 0.3f));
 	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(-2,0,-2)), glm::vec3(0.1f, 0.4f, 0.7f));
 
+	for (int i = 0; i < planets.size(); i++)
+	{
+		glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
+		drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
+	}
+
+	drawSkybox(cubeMapID);
+
 	glutSwapBuffers();
 }
 
@@ -304,8 +392,22 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	programColor = shaderLoader.CreateProgram("shaders/shader_color.vert", "shaders/shader_color.frag");
 	programTexture = shaderLoader.CreateProgram("shaders/shader_tex.vert", "shaders/shader_tex.frag");
+	programSkybox = shaderLoader.CreateProgram("shaders/sky_box.vert", "shaders/sky_box.frag");
 	sphereModel = obj::loadModelFromFile("models/sphere.obj");
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
+	textureAsteroid = Core::LoadTexture("textures/asteroid2.png");
+	
+
+	cubeMapID = Core::setupCubeMap("textures/xpos.png", "textures/xneg.png", "textures/ypos.png", "textures/yneg.png", "textures/zpos.png", "textures/zneg.png");
+
+
+	for (int i = 0; i < 10; i++)
+	{
+		glm::vec3 position = glm::ballRand(30.0f);
+		float scale = glm::linearRand(0.5f, 5.0f);
+		planets.push_back(glm::vec4(position, scale));
+	}
+
 	drawCircle(0, 0, 0, 5, 219);
 	parallel_transport();
 	initialise_particles(50);
@@ -315,6 +417,7 @@ void shutdown()
 {
 	shaderLoader.DeleteProgram(programColor);
 	shaderLoader.DeleteProgram(programTexture);
+	shaderLoader.DeleteProgram(programSkybox);
 }
 
 void idle()
