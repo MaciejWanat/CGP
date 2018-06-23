@@ -6,6 +6,8 @@
 namespace Core
 {
 	GLuint LoadTexture(const char * filepath);
+	GLuint LoadTextureCM(const char * filepath);
+	GLuint setupCubeMap(const char *xpos, const char *xneg, const char *ypos, const char *yneg, const char *zpos, const char *zneg);
 
 	// textureID - identyfikator tekstury otrzymany z funkcji LoadTexture
 	// shaderVariableName - nazwa zmiennej typu 'sampler2D' w shaderze, z ktora ma zostac powiazana tekstura
