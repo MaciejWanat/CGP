@@ -32,8 +32,6 @@ GLuint FramebufferObject;
 glm::mat4 lightProjection;
 glm::mat4 lightView;
 
-glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
-
 //Camera
 float cameraAngleX = 4.7;
 float cameraAngleY = 5;
