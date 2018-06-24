@@ -46,6 +46,8 @@ float roll = 0.0;
 float oldX = 0;
 float oldY = 0;;
 
+std::vector<float> tangent(1203);
+
 glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
 
 glm::vec3 circle_points[220]; //wektor punktów do naszej krzywej
@@ -466,8 +468,29 @@ void init()
 	sphereModel = obj::loadModelFromFile("models/sphere.obj");
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
 	textureAsteroid = Core::LoadTexture("textures/asteroid2.png");
-	
+	renderModel = obj::loadModelFromFile("models/render.obj");
+	textureEarth = Core::LoadTexture("textures/earth.png");
 	cubeMapID = Core::setupCubeMap("textures/xpos.png", "textures/xneg.png", "textures/ypos.png", "textures/yneg.png", "textures/zpos.png", "textures/zneg.png");
+
+	std::vector<float> unitY = { 0.0, 1.0, 0.0 };
+	std::vector<float> unitX = { 1.0, 0.0, 0.0 };
+
+	glm::vec3 uY = { 0.0, -1.0, 0.0 };
+	glm::vec3 uX = { -1.0, 0.0, 0.0 };
+
+	glm::vec3 tang[1203];
+
+	for (int i = 0; i < sphereModel.normal.size(); i += 3)
+	{
+		glm::vec3 normal = { sphereModel.normal[i + 0], sphereModel.normal[i + 1], sphereModel.normal[i + 2] };
+
+		if (sphereModel.normal[i + 1] < 0.99 && sphereModel.normal[i + 1] > -0.99) tang[i] = glm::normalize(glm::cross(normal, uY));
+		else tang[i] = glm::normalize(glm::cross(normal, uX));
+
+		tangent[i + 0] = tang[i].x;
+		tangent[i + 1] = tang[i].y;
+		tangent[i + 2] = tang[i].z;
+	}
 
 	for (int i = 0; i < 10; i++)
 	{
