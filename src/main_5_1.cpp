@@ -231,7 +231,7 @@ void drawObjectTexture(obj::Model * model, glm::mat4 modelMatrix, GLuint texture
 	glUseProgram(0);
 }
 
-void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, GLuint textureId, GLuint normalMap)
+void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, glm::mat4 projMatrix, glm::mat4 lightMatrix, GLuint textureId, GLuint normalMap)
 {
 	GLuint program = programTextureNorm;
 
@@ -243,8 +243,10 @@ void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, GLuint t
 	Core::SetActiveTexture(normalMap, "normalMap", program, 1);
 
 	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
+	glm::mat4 lightTransformation = projMatrix * lightMatrix * modelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
+	glUniformMatrix4fv(glGetUniformLocation(program, "lightMatrix"), 1, GL_FALSE, (float*)&lightTransformation);
 
 	Core::DrawModel(model);
 
@@ -470,7 +472,7 @@ void renderScene()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	//planet with normal mapping
-	drawObjectTextureNormal(&sphereModel, planetModelMatrix, textureEarth, textureEarthNormal);
+	drawObjectTextureNormal(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, textureEarthNormal);
 
 	//working earth here >
 	//drawObjectShadow(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, depthTexture);
