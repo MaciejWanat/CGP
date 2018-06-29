@@ -65,6 +65,8 @@ struct Particle {
 
 	glm::vec3 force;
 	glm::vec3 torque;
+
+	glm::mat4 shipDepthModel;
 };
 
 std::vector<Particle> spaceships;
@@ -296,8 +298,8 @@ void drawCircle(GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfS
 	for (int i = 0; i < numberOfVertices; i++)
 	{
 		circleVerticesX[i] = x + (radius * cos(i * doublePi / numberOfSides));
-		circleVerticesY[i] = y + (radius * sin(i * doublePi / numberOfSides));
-		circleVerticesZ[i] = z;
+		circleVerticesY[i] = y;
+		circleVerticesZ[i] = z + (radius * sin(i * doublePi / numberOfSides));
 	}
 
 	for (int i = 0; i < numberOfVertices; i++)
@@ -384,7 +386,9 @@ void renderScene()
 	for (int i = 0; i < spaceships.size(); i++)
 	{
 		glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * rotations[pointCounter % 220] * glm::scale(glm::vec3(0.10f));
+		spaceships[i].shipDepthModel = shipModelMatrix;
 		drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.0f,0.0f,0.7f));
+
 
 		glm::vec3 v1, v2, v3;
 		float m1 = 5;
@@ -435,6 +439,11 @@ void renderScene()
 
 	drawObjectDepth(&sphereModel, planetModelMatrix, lightProjection, lightView);
 	drawObjectDepth(&renderModel, renderTarget, lightProjection, lightView);
+	for (int i = 0; i < spaceships.size(); i++)
+	{
+		drawObjectDepth(&shipModel, spaceships[i].shipDepthModel, lightProjection, lightView);
+	}
+	drawObjectDepth(&shipModel, shipModelMatrix, lightProjection, lightView);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -447,13 +456,11 @@ void renderScene()
 	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(-2,0,-2)), glm::vec3(0.1f, 0.4f, 0.7f));
 	
 	//planets with reflexes (from old code)
-	/*
-	for (int i = 0; i < planets.size(); i++)
-	{
-		glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
-		drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
-	}
-	*/
+	//for (int i = 0; i < planets.size(); i++)
+	//{
+	//	glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
+	//	drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
+	//}
 	drawSkybox(cubeMapID);
 
 	glutSwapBuffers();
@@ -461,9 +468,12 @@ void renderScene()
 
 void init()
 {
+	srand(time(0));
 	glEnable(GL_DEPTH_TEST);
 	programColor = shaderLoader.CreateProgram("shaders/shader_color.vert", "shaders/shader_color.frag");
 	programTexture = shaderLoader.CreateProgram("shaders/shader_tex.vert", "shaders/shader_tex.frag");
+	programDepth = shaderLoader.CreateProgram("shaders/shader_depth.vert", "shaders/shader_depth.frag");
+	programShadow = shaderLoader.CreateProgram("shaders/shader_shadow.vert", "shaders/shader_shadow.frag");
 	programSkybox = shaderLoader.CreateProgram("shaders/sky_box.vert", "shaders/sky_box.frag");
 	sphereModel = obj::loadModelFromFile("models/sphere.obj");
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
@@ -499,7 +509,7 @@ void init()
 		planets.push_back(glm::vec4(position, scale));
 	}
 
-	drawCircle(0, 0, 0, 5, 219);
+	drawCircle(0, 3, 0, 5, 219);
 	parallel_transport();
 	initialise_particles(50);
 
