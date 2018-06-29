@@ -16,6 +16,7 @@ GLuint programTexture;
 GLuint programSkybox;
 GLuint programDepth;
 GLuint programShadow;
+GLuint programTextureNorm;
 
 Core::Shader_Loader shaderLoader;
 
@@ -28,6 +29,7 @@ obj::Model renderModel;
 GLuint depthTexture;
 GLuint textureEarth;
 GLuint FramebufferObject;
+GLuint textureEarthNormal;
 
 glm::mat4 lightProjection;
 glm::mat4 lightView;
@@ -229,6 +231,26 @@ void drawObjectTexture(obj::Model * model, glm::mat4 modelMatrix, GLuint texture
 	glUseProgram(0);
 }
 
+void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, GLuint textureId, GLuint normalMap)
+{
+	GLuint program = programTextureNorm;
+
+	glUseProgram(program);
+
+	glUniform3f(glGetUniformLocation(program, "lightDir"), lightDir.x, lightDir.y, lightDir.z);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
+	Core::SetActiveTexture(textureId, "textureSampler", program, 0);
+	Core::SetActiveTexture(normalMap, "normalMap", program, 1);
+
+	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
+
+	Core::DrawModel(model);
+
+	glUseProgram(0);
+}
+
 void drawObjectDepth(obj::Model * model, glm::mat4 modelMatrix, glm::mat4 projMatrix, glm::mat4 inverseLightMatrix)
 {
 	GLuint program = programDepth;
@@ -243,7 +265,7 @@ void drawObjectDepth(obj::Model * model, glm::mat4 modelMatrix, glm::mat4 projMa
 	glUseProgram(0);
 }
 
-void drawObjectShadow(obj::Model * model, glm::mat4 modelMatrix, glm::mat4 projMatrix, glm::mat4 lightMatrix, GLuint textureId, GLuint depthTexture)
+void drawObjectShadow(obj::Model * model, glm::mat4 modelMatrix, glm::mat4 projMatrix, glm::mat4 lightMatrix, GLuint textureId, GLuint depthTexture) 
 {
 	GLuint program = programShadow;
 
@@ -447,22 +469,23 @@ void renderScene()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	//drawObjectTexture(&renderModel, renderTarget, depthTexture);
+	//planet with normal mapping
+	drawObjectTextureNormal(&sphereModel, planetModelMatrix, textureEarth, textureEarthNormal);
 
-	drawObjectShadow(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, depthTexture);
-	drawObjectShadow(&renderModel, renderTarget, lightProjection, lightView, textureAsteroid, depthTexture);
-
-	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(2,0,2)), glm::vec3(0.8f, 0.2f, 0.3f));
-	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(-2,0,-2)), glm::vec3(0.1f, 0.4f, 0.7f));
+	//working earth here >
+	//drawObjectShadow(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, depthTexture);
+	//drawObjectShadow(&renderModel, renderTarget, lightProjection, lightView, textureAsteroid, depthTexture);
 	
 	//planets with reflexes (from old code)
-	//for (int i = 0; i < planets.size(); i++)
-	//{
-	//	glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
-	//	drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
-	//}
+	/*
+	for (int i = 0; i < planets.size(); i++)
+	{
+		glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
+		drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
+	}
+	*/
 	drawSkybox(cubeMapID);
-
+	
 	glutSwapBuffers();
 }
 
@@ -472,6 +495,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	programColor = shaderLoader.CreateProgram("shaders/shader_color.vert", "shaders/shader_color.frag");
 	programTexture = shaderLoader.CreateProgram("shaders/shader_tex.vert", "shaders/shader_tex.frag");
+	programTextureNorm = shaderLoader.CreateProgram("shaders/shader_norm.vert", "shaders/shader_norm.frag");
 	programDepth = shaderLoader.CreateProgram("shaders/shader_depth.vert", "shaders/shader_depth.frag");
 	programShadow = shaderLoader.CreateProgram("shaders/shader_shadow.vert", "shaders/shader_shadow.frag");
 	programSkybox = shaderLoader.CreateProgram("shaders/sky_box.vert", "shaders/sky_box.frag");
@@ -480,6 +504,7 @@ void init()
 	textureAsteroid = Core::LoadTexture("textures/asteroid2.png");
 	renderModel = obj::loadModelFromFile("models/render.obj");
 	textureEarth = Core::LoadTexture("textures/earth.png");
+	textureEarthNormal = Core::LoadTexture("textures/earth_normalmap.png");
 	cubeMapID = Core::setupCubeMap("textures/xpos.png", "textures/xneg.png", "textures/ypos.png", "textures/yneg.png", "textures/zpos.png", "textures/zneg.png");
 
 	std::vector<float> unitY = { 0.0, 1.0, 0.0 };
@@ -522,7 +547,7 @@ void init()
 	glGenTextures(1, &depthTexture);
 	glBindTexture(GL_TEXTURE_2D, depthTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
+	
 	//Filtering
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
