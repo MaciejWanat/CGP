@@ -10,6 +10,7 @@
 #include "Render_Utils.h"
 #include "Camera.h"
 #include "Texture.h"
+#include <iostream>
 
 GLuint programColor;
 GLuint programTexture;
@@ -268,7 +269,7 @@ void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, GLuint t
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
 	//glUniformMatrix4fv(glGetUniformLocation(program, "lightMatrix"), 1, GL_FALSE, (float*)&lightTransformation);
 
-	Core::DrawModel(model);
+	Core::DrawModelNormal(model);
 
 	glUseProgram(0);
 }
@@ -550,6 +551,8 @@ void init()
 		tangent[i + 1] = tang[i].y;
 		tangent[i + 2] = tang[i].z;
 	}
+
+	sphereModel.tangent = tangent;
 
 	for (int i = 0; i < 10; i++)
 	{

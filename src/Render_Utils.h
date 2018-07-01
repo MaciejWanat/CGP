@@ -51,4 +51,5 @@ namespace Core
 	void DrawVertexArray(const VertexData & data);
 
 	void DrawModel(obj::Model * model);
+	void DrawModelNormal(obj::Model * model);
 }

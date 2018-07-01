@@ -39,6 +39,7 @@ struct Model {
     std::vector<float> vertex; //< 3 * N entries
     std::vector<float> texCoord; //< 2 * N entries
     std::vector<float> normal; //< 3 * N entries
+	std::vector<float> tangent;
     
     std::map<std::string, std::vector<unsigned short> > faces; //< assume triangels and uniform indexing
 };
