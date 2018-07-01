@@ -36,7 +36,7 @@ glm::mat4 lightView;
 float cameraAngleX = 4.7;
 float cameraAngleY = 5;
 float cameraAngle = 0;
-glm::vec3 cameraPos = glm::vec3(-5, 0, 0);
+glm::vec3 cameraPos = glm::vec3(-5, -1, 10);
 glm::vec3 cameraDir;
 glm::mat4 cameraMatrix, perspectiveMatrix;
 float yaw = 0.0;
@@ -375,10 +375,11 @@ void renderScene()
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
 	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
-	//glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
+	glm::mat4 mainShipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(5,4.6,4.7)) * glm::rotate(-cameraAngle + glm::radians(180.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	ship_pos = glm::vec3(circle_points[pointCounter % 220].x, circle_points[pointCounter % 220].y, circle_points[pointCounter % 220].z);
 	glm::mat4 shipModelMatrix =  glm::translate(glm::vec3(ship_pos.x, ship_pos.y, ship_pos.z)) * rotations[pointCounter % 220];
 	drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.7f,0.0f,0.0f));
+	drawObjectColor(&shipModel, mainShipModelMatrix, glm::vec3(0.7f, 0.7f, 0.7f));
 	pointCounter++;
 	//Sleep(50);
 
