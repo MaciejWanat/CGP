@@ -13,6 +13,7 @@ out vec3 interpNormal;
 out vec2 interpTexCoord;
 out vec3 vertexWorldPosition;
 out vec4 lightPos;
+out vec3 interpPos;
 out mat3 TBN;
 
 void main()
@@ -21,6 +22,7 @@ void main()
 	interpNormal = (modelMatrix * vec4(vertexNormal, 0.0)).xyz;
 	vertexWorldPosition = (modelMatrix * vec4(vertexPosition, 1.0)).xyz;
 	interpTexCoord = vertexTexCoord;
+	interpPos = (modelMatrix * vec4(vertexPosition, 1.0)).xyz;
 	vec3 T = normalize(vec3(modelMatrix * vec4(vertexTangent,   0.0)));
 	vec3 N = normalize(vec3(modelMatrix * vec4(interpNormal,    0.0)));
 	vec3 B = cross(N, T);

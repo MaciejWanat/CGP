@@ -20,15 +20,17 @@ void main()
 	vec2 modifiedTexCoord = vec2(interpTexCoord.x, 1.0 - interpTexCoord.y);
 	vec3 color = texture2D(textureSampler, modifiedTexCoord).rgb;
 	
-	vec3 normal = normalize(interpNormal);
+	//vec3 normal = normalize(interpNormal);
 
 	//normal mapping
-	normal = texture(normalMap, interpTexCoord).rgb;
+	vec3 normal = texture(normalMap, interpTexCoord).rgb;
 	normal = normalize(normal * 2.0 - 1.0);   
-	normal = normalize(TBN * normal); 
+	//normal = normalize(TBN * normal); 
 
 	float diffuse = max(dot(normal, -lightDir), 0.0);
 	
 	vec3 toEye = normalize(cameraPos - interpPos);
 	float specular = pow(max(dot(toEye, reflect(lightDir, normal)), 0.0), 30.0);
+
+	FragColor = vec4(color * diffuse, 1.0) + vec4(vec3(1.0) * specular, 0.0);
 }
