@@ -24,6 +24,7 @@ int cubeMapID;
 obj::Model shipModel;
 obj::Model sphereModel;
 obj::Model renderModel;
+obj::Model coinModel;
 
 GLuint depthTexture;
 GLuint textureEarth;
@@ -84,6 +85,7 @@ GLuint textureAsteroid, xpos, xneg, ypos, yneg, zpos, zneg;
 GLuint cubemapTexture;
 
 std::vector<glm::vec4> planets;
+std::vector<glm::vec3> coins;
 
 const float cubeVertices[] = {
 	30.5f, 30.5f, 30.5f, 1.0f,
@@ -350,6 +352,15 @@ void parallel_transport() {
 	}
 }
 
+glm::mat4 createRotationMatrix(float time) {
+	glm::mat4 rotationMatrix;
+	rotationMatrix[0][0] = cos(time);
+	rotationMatrix[0][2] = -sin(time);
+	rotationMatrix[2][0] = sin(time);
+	rotationMatrix[2][2] = cos(time);
+	return rotationMatrix;
+}
+
 void initialise_particles(int qty)
 {
 	for (int i = 0; i < qty; i++) {
@@ -374,6 +385,13 @@ void renderScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
+	//dodanie naszych monetek
+	for (int i = 0; i < coins.size(); i++)
+	{
+		glm::mat4 coinModelMatrix = glm::translate(coins[i]) * createRotationMatrix(time / 2) * glm::translate(glm::vec3(-3, 0, 0)) * glm::scale(glm::vec3(0.10f));
+		drawObjectColor(&coinModel, coinModelMatrix, glm::vec3(1.0f, 1.0f, 0.0f));
+	}
+	
 	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
 	glm::mat4 mainShipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(5,4.6,4.7)) * glm::rotate(-cameraAngle + glm::radians(180.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	ship_pos = glm::vec3(circle_points[pointCounter % 220].x, circle_points[pointCounter % 220].y, circle_points[pointCounter % 220].z);
@@ -480,6 +498,7 @@ void init()
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
 	textureAsteroid = Core::LoadTexture("textures/asteroid2.png");
 	renderModel = obj::loadModelFromFile("models/render.obj");
+	coinModel = obj::loadModelFromFile("models/coin.obj");
 	textureEarth = Core::LoadTexture("textures/earth.png");
 	cubeMapID = Core::setupCubeMap("textures/xpos.png", "textures/xneg.png", "textures/ypos.png", "textures/yneg.png", "textures/zpos.png", "textures/zneg.png");
 
@@ -508,6 +527,15 @@ void init()
 		glm::vec3 position = glm::ballRand(30.0f);
 		float scale = glm::linearRand(0.5f, 5.0f);
 		planets.push_back(glm::vec4(position, scale));
+	}
+
+	for (int i = 0; i < 10; i++)
+	{
+		float xpos = glm::linearRand(-10.0f, 10.0f);
+		float ypos = glm::linearRand(-5.0f, 10.0f);
+		float zpos = glm::linearRand(-10.0f, 10.0f);
+		glm::vec3 position = glm::vec3(xpos,ypos,zpos);
+		coins.push_back(position);
 	}
 
 	drawCircle(0, 3, 0, 5, 219);
