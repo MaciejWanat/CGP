@@ -17,6 +17,7 @@ GLuint programSkybox;
 GLuint programDepth;
 GLuint programShadow;
 GLuint programTextureNorm;
+GLuint programTextureBasic;
 
 Core::Shader_Loader shaderLoader;
 
@@ -231,7 +232,26 @@ void drawObjectTexture(obj::Model * model, glm::mat4 modelMatrix, GLuint texture
 	glUseProgram(0);
 }
 
-void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, glm::mat4 projMatrix, glm::mat4 lightMatrix, GLuint textureId, GLuint normalMap)
+void drawObjectTextureBasic(obj::Model * model, glm::mat4 modelMatrix, GLuint textureId)
+{
+	GLuint program = programTextureBasic;
+
+	glUseProgram(program);
+
+	glUniform3f(glGetUniformLocation(program, "lightDir"), lightDir.x, lightDir.y, lightDir.z);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
+	Core::SetActiveTexture(textureId, "textureSampler", program, 0);
+
+	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
+
+	Core::DrawModel(model);
+
+	glUseProgram(0);
+}
+
+void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, GLuint textureId, GLuint normalMap)
 {
 	GLuint program = programTextureNorm;
 
@@ -243,10 +263,10 @@ void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, glm::mat
 	Core::SetActiveTexture(normalMap, "normalMap", program, 1);
 
 	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
-	glm::mat4 lightTransformation = projMatrix * lightMatrix * modelMatrix;
+	//glm::mat4 lightTransformation = projMatrix * lightMatrix * modelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
-	glUniformMatrix4fv(glGetUniformLocation(program, "lightMatrix"), 1, GL_FALSE, (float*)&lightTransformation);
+	//glUniformMatrix4fv(glGetUniformLocation(program, "lightMatrix"), 1, GL_FALSE, (float*)&lightTransformation);
 
 	Core::DrawModel(model);
 
@@ -472,7 +492,9 @@ void renderScene()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	//planet with normal mapping
-	drawObjectTextureNormal(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, textureEarthNormal);
+	//drawObjectTextureNormal(&sphereModel, planetModelMatrix, textureEarth, textureEarthNormal);
+
+	drawObjectTextureBasic(&sphereModel, planetModelMatrix, textureEarth);
 
 	//working earth here >
 	//drawObjectShadow(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, depthTexture);
@@ -498,6 +520,7 @@ void init()
 	programColor = shaderLoader.CreateProgram("shaders/shader_color.vert", "shaders/shader_color.frag");
 	programTexture = shaderLoader.CreateProgram("shaders/shader_tex.vert", "shaders/shader_tex.frag");
 	programTextureNorm = shaderLoader.CreateProgram("shaders/shader_norm.vert", "shaders/shader_norm.frag");
+	programTextureBasic = shaderLoader.CreateProgram("shaders/shader_basic.vert", "shaders/shader_basic.frag");
 	programDepth = shaderLoader.CreateProgram("shaders/shader_depth.vert", "shaders/shader_depth.frag");
 	programShadow = shaderLoader.CreateProgram("shaders/shader_shadow.vert", "shaders/shader_shadow.frag");
 	programSkybox = shaderLoader.CreateProgram("shaders/sky_box.vert", "shaders/sky_box.frag");
