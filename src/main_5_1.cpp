@@ -492,9 +492,8 @@ void renderScene()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	//planet with normal mapping
-	//drawObjectTextureNormal(&sphereModel, planetModelMatrix, textureEarth, textureEarthNormal);
-
-	drawObjectTextureBasic(&sphereModel, planetModelMatrix, textureEarth);
+	drawObjectTextureNormal(&sphereModel, planetModelMatrix, textureEarth, textureEarthNormal);
+	//drawObjectTextureBasic(&sphereModel, planetModelMatrix, textureEarth);
 
 	//working earth here >
 	//drawObjectShadow(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, depthTexture);
