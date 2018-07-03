@@ -352,6 +352,16 @@ void parallel_transport() {
 	}
 }
 
+//find distance between two points
+float find_distance(glm::vec3 A, glm::vec3 B) {
+	float dx, dy, dz, d;
+	dx = A.x - B.x;
+	dy = A.y - B.y;
+	dz = A.z - B.z;
+	d = pow(dx, 2) + pow(dy, 2) + pow(dz, 2);
+	return sqrt(d);
+}
+
 glm::mat4 createRotationMatrix(float time) {
 	glm::mat4 rotationMatrix;
 	rotationMatrix[0][0] = cos(time);
@@ -385,14 +395,7 @@ void renderScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
-	//dodanie naszych monetek
-	for (int i = 0; i < coins.size(); i++)
-	{
-		glm::mat4 coinModelMatrix = glm::translate(coins[i]) * createRotationMatrix(time / 2) * glm::translate(glm::vec3(-3, 0, 0)) * glm::scale(glm::vec3(0.10f));
-		drawObjectColor(&coinModel, coinModelMatrix, glm::vec3(1.0f, 1.0f, 0.0f));
-	}
-	
-	// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
+		// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
 	glm::mat4 mainShipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(5,4.6,4.7)) * glm::rotate(-cameraAngle + glm::radians(180.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	ship_pos = glm::vec3(circle_points[pointCounter % 220].x, circle_points[pointCounter % 220].y, circle_points[pointCounter % 220].z);
 	glm::mat4 shipModelMatrix =  glm::translate(glm::vec3(ship_pos.x, ship_pos.y, ship_pos.z)) * rotations[pointCounter % 220];
@@ -400,6 +403,18 @@ void renderScene()
 	drawObjectColor(&shipModel, mainShipModelMatrix, glm::vec3(0.7f, 0.7f, 0.7f));
 	pointCounter++;
 	//Sleep(50);
+
+	//dodanie naszych monetek
+	for (int i = 0; i < coins.size(); i++)
+	{
+		glm::mat4 coinModelMatrix = glm::translate(coins[i]) * createRotationMatrix(time / 2) * glm::translate(glm::vec3(-3, 0, 0)) * glm::scale(glm::vec3(0.10f));
+		glm::vec3 mainShipPosition = mainShipModelMatrix[3];
+		float d = find_distance(coins[i], mainShipPosition + glm::vec3(0,-2.5,0));
+		if (d < 1)
+			coins.erase(std::find(coins.begin(), coins.end(), coins[i]));
+		else
+			drawObjectColor(&coinModel, coinModelMatrix, glm::vec3(1.0f, 1.0f, 0.0f));
+	}
 
 	//przemieszczanie stateczków
 	for (int i = 0; i < spaceships.size(); i++)
