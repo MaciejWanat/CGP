@@ -18,7 +18,7 @@ GLuint programSkybox;
 GLuint programDepth;
 GLuint programShadow;
 
-const int font = (int)GLUT_BITMAP_9_BY_15;
+const int font = (int)GLUT_BITMAP_HELVETICA_18;
 int w, h;
 char s[30];
 double t;
@@ -436,7 +436,7 @@ void initialise_particles(int qty)
 void renderScene()
 {
 
-	if (state) {
+	if (state && coins.size() != 0) {
 		float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 		// Aktualizacja macierzy widoku i rzutowania. Macierze sa przechowywane w zmiennych globalnych, bo uzywa ich funkcja drawObject.
 		// (Bardziej elegancko byloby przekazac je jako argumenty do funkcji, ale robimy tak dla uproszczenia kodu.
@@ -577,6 +577,19 @@ void renderScene()
 	}
 
 	//print 'game over'
+	else if (coins.size() == 0) {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+
+		glColor3d(1.0, 1.0, 1.0);
+		setOrthographicProjection();
+		glPushMatrix();
+		glLoadIdentity();
+		renderBitmapString(450, 512, (void *)font, "WON!!!");
+		glPopMatrix();
+		resetPerspectiveProjection();
+	}
+
 	else {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
@@ -637,7 +650,7 @@ void init()
 		planets.push_back(glm::vec4(position, scale));
 	}
 
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		float xpos = glm::linearRand(-10.0f, 10.0f);
 		float ypos = glm::linearRand(-5.0f, 10.0f);
