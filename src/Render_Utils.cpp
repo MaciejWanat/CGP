@@ -38,9 +38,26 @@ void Core::DrawModel( obj::Model * model )
 	glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, &model->vertex[0]);
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, &model->texCoord[0]);
 	glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, &model->normal[0]);
+
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+
+	unsigned short * tmp = &model->faces["default"][0];
+	glDrawElements(GL_TRIANGLES, model->faces["default"].size(), GL_UNSIGNED_SHORT, tmp);
+}
+
+void Core::DrawModelNormal(obj::Model * model)
+{
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, &model->vertex[0]);
+	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, &model->texCoord[0]);
+	glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, &model->normal[0]);
+	glVertexAttribPointer(3, 3, GL_FLOAT, false, 0, &model->tangent[0]);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
 
 	unsigned short * tmp = &model->faces["default"][0];
 	glDrawElements(GL_TRIANGLES, model->faces["default"].size(), GL_UNSIGNED_SHORT, tmp);

@@ -17,6 +17,8 @@ GLuint programTexture;
 GLuint programSkybox;
 GLuint programDepth;
 GLuint programShadow;
+GLuint programTextureNorm;
+GLuint programTextureBasic;
 
 const int font = (int)GLUT_BITMAP_9_BY_15;
 int w, h;
@@ -34,6 +36,7 @@ obj::Model coinModel;
 
 GLuint depthTexture;
 GLuint textureEarth;
+GLuint textureEarthNormal;
 GLuint FramebufferObject;
 
 glm::mat4 lightProjection;
@@ -271,6 +274,46 @@ void drawObjectShadow(obj::Model * model, glm::mat4 modelMatrix, glm::mat4 projM
 	glUniformMatrix4fv(glGetUniformLocation(program, "lightMatrix"), 1, GL_FALSE, (float*)&lightTransformation);
 
 	Core::DrawModel(model);
+
+	glUseProgram(0);
+}
+void drawObjectTextureBasic(obj::Model * model, glm::mat4 modelMatrix, GLuint textureId)
+{
+	GLuint program = programTextureBasic;
+
+	glUseProgram(program);
+
+	glUniform3f(glGetUniformLocation(program, "lightDir"), lightDir.x, lightDir.y, lightDir.z);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
+	Core::SetActiveTexture(textureId, "textureSampler", program, 0);
+
+	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
+
+	Core::DrawModel(model);
+
+	glUseProgram(0);
+}
+
+void drawObjectTextureNormal(obj::Model * model, glm::mat4 modelMatrix, GLuint textureId, GLuint normalMap)
+{
+	GLuint program = programTextureNorm;
+
+	glUseProgram(program);
+
+	glUniform3f(glGetUniformLocation(program, "lightDir"), lightDir.x, lightDir.y, lightDir.z);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
+	Core::SetActiveTexture(textureId, "textureSampler", program, 0);
+	Core::SetActiveTexture(normalMap, "normalMap", program, 1);
+
+	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
+	//glm::mat4 lightTransformation = projMatrix * lightMatrix * modelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
+	//glUniformMatrix4fv(glGetUniformLocation(program, "lightMatrix"), 1, GL_FALSE, (float*)&lightTransformation);
+
+	Core::DrawModelNormal(model);
 
 	glUseProgram(0);
 }
@@ -548,20 +591,18 @@ void renderScene()
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		//drawObjectTexture(&renderModel, renderTarget, depthTexture);
+		//planet with normal mapping
+		drawObjectTextureNormal(&sphereModel, planetModelMatrix, textureEarth, textureEarthNormal);
 
 		drawObjectShadow(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, depthTexture);
 		drawObjectShadow(&renderModel, renderTarget, lightProjection, lightView, textureAsteroid, depthTexture);
 
-		//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(2,0,2)), glm::vec3(0.8f, 0.2f, 0.3f));
-		//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(-2,0,-2)), glm::vec3(0.1f, 0.4f, 0.7f));
-
 		//planets with reflexes (from old code)
-		//for (int i = 0; i < planets.size(); i++)
-		//{
-		//	glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
-		//	drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
-		//}
+		for (int i = 0; i < 3; i++)
+		{
+			glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
+			drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
+		}
 		drawSkybox(cubeMapID);
 
 		//collision detection
@@ -599,6 +640,8 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	programColor = shaderLoader.CreateProgram("shaders/shader_color.vert", "shaders/shader_color.frag");
 	programTexture = shaderLoader.CreateProgram("shaders/shader_tex.vert", "shaders/shader_tex.frag");
+	programTextureNorm = shaderLoader.CreateProgram("shaders/shader_norm.vert", "shaders/shader_norm.frag");
+	programTextureBasic = shaderLoader.CreateProgram("shaders/shader_basic.vert", "shaders/shader_basic.frag");
 	programDepth = shaderLoader.CreateProgram("shaders/shader_depth.vert", "shaders/shader_depth.frag");
 	programShadow = shaderLoader.CreateProgram("shaders/shader_shadow.vert", "shaders/shader_shadow.frag");
 	programSkybox = shaderLoader.CreateProgram("shaders/sky_box.vert", "shaders/sky_box.frag");
@@ -608,6 +651,7 @@ void init()
 	renderModel = obj::loadModelFromFile("models/render.obj");
 	coinModel = obj::loadModelFromFile("models/coin.obj");
 	textureEarth = Core::LoadTexture("textures/earth.png");
+	textureEarthNormal = Core::LoadTexture("textures/earth_normalmap.png");
 	cubeMapID = Core::setupCubeMap("textures/xpos.png", "textures/xneg.png", "textures/ypos.png", "textures/yneg.png", "textures/zpos.png", "textures/zneg.png");
 
 	std::vector<float> unitY = { 0.0, 1.0, 0.0 };
@@ -629,6 +673,8 @@ void init()
 		tangent[i + 1] = tang[i].y;
 		tangent[i + 2] = tang[i].z;
 	}
+
+	sphereModel.tangent = tangent;
 
 	for (int i = 0; i < 10; i++)
 	{
