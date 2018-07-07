@@ -5,15 +5,16 @@ layout(location = 1) in vec2 vertexTexCoord;
 layout(location = 2) in vec3 vertexNormal;
 
 uniform mat4 modelViewProjectionMatrix;
+uniform mat4 modelMatrix;
 
-out vec3 fragVert;
-out vec3 fragNormal;
-out vec2 fragTexCoord;
+out vec3 interpNormal;
+out vec2 interpTexCoord;
+out vec3 vertexWorldPosition;
 
 void main()
 {
 	gl_Position = modelViewProjectionMatrix * vec4(vertexPosition, 1.0);
-	fragTexCoord = vertexTexCoord;
-	fragNormal = vertexNormal;
-	fragVert = vertexPosition;
+	interpNormal = (modelMatrix * vec4(vertexNormal, 0.0)).xyz;
+	vertexWorldPosition = (modelMatrix * vec4(vertexPosition, 1.0)).xyz;
+	interpTexCoord = vertexTexCoord;
 }
