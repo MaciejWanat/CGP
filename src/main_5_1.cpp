@@ -451,7 +451,12 @@ void renderScene()
 		setOrthographicProjection();
 		glPushMatrix();
 		glLoadIdentity();
-		renderBitmapString(100, 100, (void *)font, "Coins: ");
+		//renderBitmapString(100, 100, (void *)font, "Coins: ");
+		std::stringstream ss;
+		ss << "Coins: " << 10-coins.size() << "/" << 10;
+		std::string s = ss.str();
+		const char * c = s.c_str();
+		renderBitmapString(100, 100, (void *)font, c);
 		glPopMatrix();
 		resetPerspectiveProjection();
 
@@ -561,8 +566,14 @@ void renderScene()
 
 		//collision detection
 		float dp = find_distance(planetPosition, mainShipPosition);
-		if (dp < 4)
+		float ds = find_distance(ship_pos, mainShipPosition);
+		if (dp < 4 || ds < 2)
 			state = false;
+		for (int i = 0; i < spaceships.size(); i++) {
+			float dss = find_distance(spaceships[i].pos, mainShipPosition);
+			if (dss < 1)
+				state = false;
+		}
 	}
 
 	//print 'game over'
