@@ -650,7 +650,7 @@ void init()
 		planets.push_back(glm::vec4(position, scale));
 	}
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 10; i++)
 	{
 		float xpos = glm::linearRand(-10.0f, 10.0f);
 		float ypos = glm::linearRand(-5.0f, 10.0f);
@@ -725,12 +725,3 @@ int main(int argc, char ** argv)
 
 
 }
-//	glutInit(&argc, argv);
-//	glutInitWindowSize(640, 480);
-//	glutInitWindowPosition(10, 10);
-//	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);     glutCreateWindow("Font Rendering Using Bitmap Font - Programming Techniques0");     glutReshapeFunc(resize);
-//	glutDisplayFunc(renderScene);
-//	glutTimerFunc(25, update, 0);    
-//	glutMainLoop();
-//	return EXIT_SUCCESS;
-
