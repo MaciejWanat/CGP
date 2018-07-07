@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <windows.h>
+#include <string.h>
 
 #include "Shader_Loader.h"
 #include "Render_Utils.h"
@@ -16,6 +17,11 @@ GLuint programTexture;
 GLuint programSkybox;
 GLuint programDepth;
 GLuint programShadow;
+
+const int font = (int)GLUT_BITMAP_9_BY_15;
+int w, h;
+char s[30];
+double t;
 
 Core::Shader_Loader shaderLoader;
 
@@ -50,6 +56,8 @@ float oldY = 0;;
 std::vector<float> tangent(1203);
 
 glm::vec3 lightDir = glm::normalize(glm::vec3(1.0f, -0.9f, -1.0f));
+
+bool state = true;
 
 glm::vec3 circle_points[220]; //wektor punktów do naszej krzywej
 glm::mat4 rotations[220]; //macierz rotacji BNT - wzd³u¿ krzywej
@@ -362,6 +370,48 @@ float find_distance(glm::vec3 A, glm::vec3 B) {
 	return sqrt(d);
 }
 
+void setOrthographicProjection() {
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	gluOrtho2D(0, w, 0, h);
+	glScalef(1, -1, 1);
+	glTranslatef(0, -h, 0);
+	glMatrixMode(GL_MODELVIEW);
+}
+void resetPerspectiveProjection() {
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+}
+void renderBitmapString(float x, float y, void *font, const char *string) {
+	const char *c;
+	glRasterPos2f(x, y);
+	for (c = string; *c != '\0'; c++) {
+		glutBitmapCharacter(font, *c);
+	}
+}
+
+static void resize(int width, int height)
+{
+	const float ar = (float)width / (float)height;
+	w = width;
+	h = height;
+	glViewport(0, 0, width, height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glFrustum(-ar, ar, -1.0, 1.0, 2.0, 100.0);     glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}
+
+void update(int value) {
+	t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+	int time = (int)t;
+	sprintf(s, "TIME : %2d Sec", time);
+	glutTimerFunc(1000, update, 0);
+	glutPostRedisplay();
+}
+
 glm::mat4 createRotationMatrix(float time) {
 	glm::mat4 rotationMatrix;
 	rotationMatrix[0][0] = cos(time);
@@ -385,117 +435,149 @@ void initialise_particles(int qty)
 
 void renderScene()
 {
-	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
-	// Aktualizacja macierzy widoku i rzutowania. Macierze sa przechowywane w zmiennych globalnych, bo uzywa ich funkcja drawObject.
-	// (Bardziej elegancko byloby przekazac je jako argumenty do funkcji, ale robimy tak dla uproszczenia kodu.
-	//  Jest to mozliwe dzieki temu, ze macierze widoku i rzutowania sa takie same dla wszystkich obiektow!)
-	cameraMatrix = createCameraMatrix();
-	perspectiveMatrix = Core::createPerspectiveMatrix();
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+	if (state) {
+		float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+		// Aktualizacja macierzy widoku i rzutowania. Macierze sa przechowywane w zmiennych globalnych, bo uzywa ich funkcja drawObject.
+		// (Bardziej elegancko byloby przekazac je jako argumenty do funkcji, ale robimy tak dla uproszczenia kodu.
+		//  Jest to mozliwe dzieki temu, ze macierze widoku i rzutowania sa takie same dla wszystkich obiektow!)
+		cameraMatrix = createCameraMatrix();
+		perspectiveMatrix = Core::createPerspectiveMatrix();
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+
+		glColor3d(0.0, 0.0, 0.0);
+		setOrthographicProjection();
+		glPushMatrix();
+		glLoadIdentity();
+		renderBitmapString(100, 100, (void *)font, "Coins: ");
+		glPopMatrix();
+		resetPerspectiveProjection();
+
 
 		// Macierz statku "przyczepia" go do kamery. Warto przeanalizowac te linijke i zrozumiec jak to dziala.
-	glm::mat4 mainShipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(5,4.6,4.7)) * glm::rotate(-cameraAngle + glm::radians(180.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
-	ship_pos = glm::vec3(circle_points[pointCounter % 220].x, circle_points[pointCounter % 220].y, circle_points[pointCounter % 220].z);
-	glm::mat4 shipModelMatrix =  glm::translate(glm::vec3(ship_pos.x, ship_pos.y, ship_pos.z)) * rotations[pointCounter % 220];
-	drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.7f,0.0f,0.0f));
-	drawObjectColor(&shipModel, mainShipModelMatrix, glm::vec3(0.7f, 0.7f, 0.7f));
-	pointCounter++;
-	//Sleep(50);
-
-	//dodanie naszych monetek
-	for (int i = 0; i < coins.size(); i++)
-	{
-		glm::mat4 coinModelMatrix = glm::translate(coins[i]) * createRotationMatrix(time / 2) * glm::translate(glm::vec3(-3, 0, 0)) * glm::scale(glm::vec3(0.10f));
+		glm::mat4 mainShipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(5, 4.6, 4.7)) * glm::rotate(-cameraAngle + glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::vec3(0.25f));
 		glm::vec3 mainShipPosition = mainShipModelMatrix[3];
-		float d = find_distance(coins[i], mainShipPosition + glm::vec3(0,-2.5,0));
-		if (d < 1)
-			coins.erase(std::find(coins.begin(), coins.end(), coins[i]));
-		else
-			drawObjectColor(&coinModel, coinModelMatrix, glm::vec3(1.0f, 1.0f, 0.0f));
-	}
+		ship_pos = glm::vec3(circle_points[pointCounter % 220].x, circle_points[pointCounter % 220].y, circle_points[pointCounter % 220].z);
+		glm::mat4 shipModelMatrix = glm::translate(glm::vec3(ship_pos.x, ship_pos.y, ship_pos.z)) * rotations[pointCounter % 220];
+		drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.7f, 0.0f, 0.0f));
+		drawObjectColor(&shipModel, mainShipModelMatrix, glm::vec3(0.7f, 0.7f, 0.7f));
+		pointCounter++;
+		//Sleep(50);
 
-	//przemieszczanie stateczków
-	for (int i = 0; i < spaceships.size(); i++)
-	{
-		glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * rotations[pointCounter % 220] * glm::scale(glm::vec3(0.10f));
-		spaceships[i].shipDepthModel = shipModelMatrix;
-		drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.0f,0.0f,0.7f));
-
-
-		glm::vec3 v1, v2, v3;
-		float m1 = 5;
-		float m2 = 3;
-		float m3 = 0.05;
-		//v1 = rule1: centre_of_mass = ship_pos;
-		v1 = glm::normalize(ship_pos - spaceships[i].pos);
-		v1 = m1 * v1;
-		//v2 = rule2: keep a distance away from other objects
-		if (glm::length(ship_pos - spaceships[i].pos) < 2.5)
-			spaceships[i].pos -= (ship_pos - spaceships[i].pos);
-		for (int j = 0; j < spaceships.size(); j++){
-			v2 = glm::vec3(0, 0, 0);
-			if (j != i) //boid which is near by
-				if (glm::length(spaceships[j].pos - spaceships[i].pos) < 2)
-					v2 -= (spaceships[j].pos - spaceships[i].pos);
+		//dodanie naszych monetek
+		for (int i = 0; i < coins.size(); i++)
+		{
+			glm::mat4 coinModelMatrix = glm::translate(coins[i]) * createRotationMatrix(time / 2) * glm::translate(glm::vec3(-3, 0, 0)) * glm::scale(glm::vec3(0.10f));
+			float d = find_distance(coins[i], mainShipPosition + glm::vec3(0, -2.5, 0));
+			if (d < 1)
+				coins.erase(std::find(coins.begin(), coins.end(), coins[i]));
+			else
+				drawObjectColor(&coinModel, coinModelMatrix, glm::vec3(1.0f, 1.0f, 0.0f));
 		}
-		v2 = m2 * v2;
-		//v3 = rule3: match velocity with near boids
-		for (int j = 0; j < spaceships.size(); j++){
-			if (j != i)
-				v3 += spaceships[j].vel;
+
+		//przemieszczanie stateczków
+		for (int i = 0; i < spaceships.size(); i++)
+		{
+			glm::mat4 shipModelMatrix = glm::translate(spaceships[i].pos) * rotations[pointCounter % 220] * glm::scale(glm::vec3(0.10f));
+			spaceships[i].shipDepthModel = shipModelMatrix;
+			drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.0f, 0.0f, 0.7f));
+
+
+			glm::vec3 v1, v2, v3;
+			float m1 = 5;
+			float m2 = 3;
+			float m3 = 0.05;
+			//v1 = rule1: centre_of_mass = ship_pos;
+			v1 = glm::normalize(ship_pos - spaceships[i].pos);
+			v1 = m1 * v1;
+			//v2 = rule2: keep a distance away from other objects
+			if (glm::length(ship_pos - spaceships[i].pos) < 2.5)
+				spaceships[i].pos -= (ship_pos - spaceships[i].pos);
+			for (int j = 0; j < spaceships.size(); j++) {
+				v2 = glm::vec3(0, 0, 0);
+				if (j != i) //boid which is near by
+					if (glm::length(spaceships[j].pos - spaceships[i].pos) < 2)
+						v2 -= (spaceships[j].pos - spaceships[i].pos);
+			}
+			v2 = m2 * v2;
+			//v3 = rule3: match velocity with near boids
+			for (int j = 0; j < spaceships.size(); j++) {
+				if (j != i)
+					v3 += spaceships[j].vel;
+			}
+			v3 = v3 / (spaceships.size() - 1);
+			v3 = (v3 - spaceships[i].vel) / 8;
+			v3 = m3 * v3;
+
+			spaceships[i].vel += v1 + v2 + v3;
+			//limiting the speed
+			int vlim = 1;
+			if (glm::length(spaceships[i].vel) > vlim)
+				spaceships[i].vel = (spaceships[i].vel / glm::length(spaceships[i].vel)) * vlim;
+
+			spaceships[i].pos += spaceships[i].vel;
 		}
-		v3 = v3 / (spaceships.size() - 1);
-		v3 = (v3 - spaceships[i].vel) / 8;
-		v3 = m3 * v3;
+		//planets with shadows
+		glm::mat4 planetModelMatrix = glm::translate(glm::vec3(sin(-time), 2.0, cos(-time))) * glm::scale(glm::vec3(3.0));
+		glm::vec3 planetPosition = planetModelMatrix[3];
 
-		spaceships[i].vel += v1 + v2 + v3;
-		//limiting the speed
-		int vlim = 1;
-		if (glm::length(spaceships[i].vel) > vlim)
-			spaceships[i].vel = (spaceships[i].vel / glm::length(spaceships[i].vel)) * vlim;
+		glm::mat4 renderTarget = glm::translate(glm::vec3(0, -5, 0)) * glm::rotate(-1.56f, glm::vec3(1, 0, 0)) * glm::rotate(1.56f, glm::vec3(0, 1, 0)) * glm::scale(glm::vec3(7, 14, 14));
 
-		spaceships[i].pos += spaceships[i].vel;
+		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferObject);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, -30.0f, 30.0f);
+		lightView = glm::lookAt(-lightDir,
+			glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f));
+
+		drawObjectDepth(&sphereModel, planetModelMatrix, lightProjection, lightView);
+		drawObjectDepth(&renderModel, renderTarget, lightProjection, lightView);
+		for (int i = 0; i < spaceships.size(); i++)
+		{
+			drawObjectDepth(&shipModel, spaceships[i].shipDepthModel, lightProjection, lightView);
+		}
+		drawObjectDepth(&shipModel, shipModelMatrix, lightProjection, lightView);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		//drawObjectTexture(&renderModel, renderTarget, depthTexture);
+
+		drawObjectShadow(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, depthTexture);
+		drawObjectShadow(&renderModel, renderTarget, lightProjection, lightView, textureAsteroid, depthTexture);
+
+		//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(2,0,2)), glm::vec3(0.8f, 0.2f, 0.3f));
+		//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(-2,0,-2)), glm::vec3(0.1f, 0.4f, 0.7f));
+
+		//planets with reflexes (from old code)
+		//for (int i = 0; i < planets.size(); i++)
+		//{
+		//	glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
+		//	drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
+		//}
+		drawSkybox(cubeMapID);
+
+		//collision detection
+		float dp = find_distance(planetPosition, mainShipPosition);
+		if (dp < 4)
+			state = false;
 	}
-	//planets with shadows
-	glm::mat4 planetModelMatrix = glm::translate(glm::vec3(sin(-time), 2.0, cos(-time))) * glm::scale(glm::vec3(3.0));
 
-	glm::mat4 renderTarget = glm::translate(glm::vec3(0, -5, 0)) * glm::rotate(-1.56f, glm::vec3(1, 0, 0)) * glm::rotate(1.56f, glm::vec3(0, 1, 0)) * glm::scale(glm::vec3(7, 14, 14));
+	//print 'game over'
+	else {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferObject);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, -30.0f, 30.0f);
-	lightView = glm::lookAt(-lightDir,
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f));
-
-	drawObjectDepth(&sphereModel, planetModelMatrix, lightProjection, lightView);
-	drawObjectDepth(&renderModel, renderTarget, lightProjection, lightView);
-	for (int i = 0; i < spaceships.size(); i++)
-	{
-		drawObjectDepth(&shipModel, spaceships[i].shipDepthModel, lightProjection, lightView);
+		glColor3d(1.0, 1.0, 1.0);
+		setOrthographicProjection();
+		glPushMatrix();
+		glLoadIdentity();
+		renderBitmapString(450, 512, (void *)font, "GAME OVER");
+		glPopMatrix();
+		resetPerspectiveProjection();
 	}
-	drawObjectDepth(&shipModel, shipModelMatrix, lightProjection, lightView);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	//drawObjectTexture(&renderModel, renderTarget, depthTexture);
-
-	drawObjectShadow(&sphereModel, planetModelMatrix, lightProjection, lightView, textureEarth, depthTexture);
-	drawObjectShadow(&renderModel, renderTarget, lightProjection, lightView, textureAsteroid, depthTexture);
-
-	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(2,0,2)), glm::vec3(0.8f, 0.2f, 0.3f));
-	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(-2,0,-2)), glm::vec3(0.1f, 0.4f, 0.7f));
-	
-	//planets with reflexes (from old code)
-	//for (int i = 0; i < planets.size(); i++)
-	//{
-	//	glm::mat4 planetModelMatrix = glm::translate(glm::vec3(planets[i])) * glm::scale(glm::vec3(planets[i].w));
-	//	drawObjectTexture(&sphereModel, planetModelMatrix, cubeMapID);
-	//}
-	drawSkybox(cubeMapID);
 
 	glutSwapBuffers();
 }
@@ -595,11 +677,14 @@ void idle()
 
 int main(int argc, char ** argv)
 {
+
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+
 	glutInitWindowPosition(200, 200);
 	glutInitWindowSize(1024, 1024);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutCreateWindow("Niezwykle zaawansowana symulacja graficzna");
+	glutReshapeFunc(resize);
 	glewInit();
 
 	init();
@@ -607,10 +692,21 @@ int main(int argc, char ** argv)
 	glutKeyboardFunc(keyboard);
 	glutDisplayFunc(renderScene);
 	glutIdleFunc(idle);
-
+	glutTimerFunc(25, update, 0);
 	glutMainLoop();
 
 	shutdown();
 
 	return 0;
+
+
 }
+//	glutInit(&argc, argv);
+//	glutInitWindowSize(640, 480);
+//	glutInitWindowPosition(10, 10);
+//	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);     glutCreateWindow("Font Rendering Using Bitmap Font - Programming Techniques0");     glutReshapeFunc(resize);
+//	glutDisplayFunc(renderScene);
+//	glutTimerFunc(25, update, 0);    
+//	glutMainLoop();
+//	return EXIT_SUCCESS;
+
