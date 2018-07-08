@@ -479,7 +479,7 @@ void initialise_particles(int qty)
 void renderScene()
 {
 
-	if (state) {
+	if (state && coins.size() != 0) {
 		float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 		// Aktualizacja macierzy widoku i rzutowania. Macierze sa przechowywane w zmiennych globalnych, bo uzywa ich funkcja drawObject.
 		// (Bardziej elegancko byloby przekazac je jako argumenty do funkcji, ale robimy tak dla uproszczenia kodu.
@@ -615,6 +615,24 @@ void renderScene()
 			if (dss < 1)
 				state = false;
 		}
+		for (int i = 0; i < 3; i++) {
+			float dps = find_distance(planets[i], mainShipPosition);
+			if (dps < 2)
+				state = false;
+		}
+	}
+
+	else if (coins.size() == 0) {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+
+		glColor3d(1.0, 1.0, 1.0);
+		setOrthographicProjection();
+		glPushMatrix();
+		glLoadIdentity();
+		renderBitmapString(450, 512, (void *)font, "WON!!!");
+		glPopMatrix();
+		resetPerspectiveProjection();
 	}
 
 	//print 'game over'
@@ -676,19 +694,32 @@ void init()
 
 	sphereModel.tangent = tangent;
 
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		glm::vec3 position = glm::ballRand(30.0f);
-		float scale = glm::linearRand(0.5f, 5.0f);
+		float d = find_distance(glm::vec3(-1, 2, -1), position);
+		while (d < 2) {
+			position = glm::ballRand(30.0f);
+			d = find_distance(glm::vec3(-1, 2, -1), position);
+		}
+		float scale = glm::linearRand(1.5f, 1.0f);
 		planets.push_back(glm::vec4(position, scale));
 	}
 
 	for (int i = 0; i < 10; i++)
 	{
 		float xpos = glm::linearRand(-10.0f, 10.0f);
-		float ypos = glm::linearRand(-5.0f, 10.0f);
+		float ypos = glm::linearRand(-4.0f, 10.0f);
 		float zpos = glm::linearRand(-10.0f, 10.0f);
-		glm::vec3 position = glm::vec3(xpos,ypos,zpos);
+		glm::vec3 position = glm::vec3(xpos, ypos, zpos);
+		float d = find_distance(glm::vec3(-1, 2, -1), position);
+		while (d < 2) {
+			xpos = glm::linearRand(-10.0f, 10.0f);
+			ypos = glm::linearRand(-4.0f, 10.0f);
+			zpos = glm::linearRand(-10.0f, 10.0f);
+			position = glm::vec3(xpos, ypos, zpos);
+			d = find_distance(glm::vec3(-1, 2, -1), position);
+		}
 		coins.push_back(position);
 	}
 
