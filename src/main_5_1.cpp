@@ -97,6 +97,7 @@ GLuint cubemapTexture;
 
 std::vector<glm::vec4> planets;
 std::vector<glm::vec3> coins;
+glm::vec3 points[220];
 
 const float cubeVertices[] = {
 	30.5f, 30.5f, 30.5f, 1.0f,
@@ -432,6 +433,26 @@ void renderBitmapString(float x, float y, void *font, const char *string) {
 	glRasterPos2f(x, y);
 	for (c = string; *c != '\0'; c++) {
 		glutBitmapCharacter(font, *c);
+	}
+}
+
+glm::vec3 catmull_rom_spline(const std::vector<glm::vec3>& cp, float t, int points_in)
+{
+
+	float step = 1.0 / (float)points_in;
+	// indices of the relevant control points
+	int i0 = glm::clamp<int>(t - 1, 0, cp.size() - 1);
+	int i1 = glm::clamp<int>(t, 0, cp.size() - 1);
+	int i2 = glm::clamp<int>(t + 1, 0, cp.size() - 1);
+	int i3 = glm::clamp<int>(t + 2, 0, cp.size() - 1);
+
+	// parameter on the local curve interval
+	float local_t = glm::fract(t);
+
+	for (int j = 1; j < points_in; j++)
+	{
+		points[j] = glm::catmullRom(cp[i0], cp[i1], cp[i2], cp[i3], local_t);
+		local_t += step;
 	}
 }
 
